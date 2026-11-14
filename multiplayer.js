@@ -305,12 +305,12 @@ async function render() {
   let ack = Math.max(0, Math.min(ROUNDS, Number(localStorage.getItem(acknowledgedKey) || 0)));
   if (ack < completed) {
     const [a, b] = roundScores[ack], q = env.DB[match.questionIds[ack]];
-    display(basePage(base + '<span class="tag">ROUND ' + (ack + 1) + '/' + ROUNDS + ' · REVEAL</span><h2>' + h(q?.name || 'Engineering puzzle') + '</h2><p>' + h(match.hostName) + ': ' + h(a.answer || '(no answer)') + ' — <b>' + a.points + ' points</b>' + (a.valid ? '' : ' (invalid or forfeited)') + '</p><p>' + h(match.guestName) + ': ' + h(b.answer || '(no answer)') + ' — <b>' + b.points + ' points</b>' + (b.valid ? '' : ' (invalid or forfeited)') + '</p><button onclick="MechOnline.ack()">' + (ack === ROUNDS - 1 ? 'Final results' : 'Continue') + '</button></div>', 'reveal:' + id + ':' + ack + ':' + completed);
+    display(basePage(base + '<span class="tag">ROUND ' + (ack + 1) + '/' + ROUNDS + ' · REVEAL</span><h2>' + h(q?.name || 'Engineering puzzle') + '</h2><p>' + h(match.hostName) + ': ' + h(a.answer || '(no answer)') + ' — <b>' + a.points + ' points</b>' + (a.valid ? '' : ' (invalid or forfeited)') + '</p><p>' + h(match.guestName) + ': ' + h(b.answer || '(no answer)') + ' — <b>' + b.points + ' points</b>' + (b.valid ? '' : ' (invalid or forfeited)') + '</p><button onclick="MechOnline.ack()">' + (ack === ROUNDS - 1 ? 'Final results' : 'Continue') + '</button></div>', 'reveal:' + id + ':' + ack + ':' + completed + ':' + scores.join('-') + ':' + a.valid + ':' + b.valid);
     return;
   }
   if (completed >= ROUNDS) {
     const winner = scores[0] === scores[1] ? 'It’s a draw!' : (scores[0] > scores[1] ? match.hostName : match.guestName) + ' wins!';
-    display(basePage(base + '<h2>🏆 ' + h(winner) + '</h2><p>Ten rounds completed. Match results are kept in Firestore until the match is deleted.</p><button onclick="MechOnline.leave()">Back to Battle Arena</button></div>', 'finished:' + id);
+    display(basePage(base + '<h2>🏆 ' + h(winner) + '</h2><p>Ten rounds completed. Match results are kept in Firestore until the match is deleted.</p><button onclick="MechOnline.leave()">Back to Battle Arena</button></div>', 'finished:' + id + ':' + scores.join('-'));
     return;
   }
   const q = env.DB[match.questionIds[completed]];
