@@ -3,11 +3,15 @@ on:
   push:
     paths:
       - 'index.html'
+      - 'multiplayer.js'
+      - 'firestore.rules'
       - 'tests/**'
       - '.github/workflows/game-tests.yml'
   pull_request:
     paths:
       - 'index.html'
+      - 'multiplayer.js'
+      - 'firestore.rules'
       - 'tests/**'
       - '.github/workflows/game-tests.yml'
   workflow_dispatch:
