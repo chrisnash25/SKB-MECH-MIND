@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function matchPath(id) {
+      return /databases/$(database)/documents/matches/$(id);
+    }
+    function matchData(id) {
+      return get(matchPath(id)).data;
+    }
+    function participant(id) {
+      return signedIn() && (matchData(id).hostUid == request.auth.uid ||
+        matchData(id).guestUid == request.auth.uid);
+    }
+    function activeParticipant(id) {
+      return participant(id) && matchData(id).status == 'playing' &&
+        matchData(id).expiresAt > request.time;
+    }
+    function validRound() {
+      return request.resource.data.round is int &&
+        request.resource.data.round >= 0 && request.resource.data.round < 10;
+    }
+    function validAnswerOwner(key) {
+      return signedIn() && request.resource.data.uid == request.auth.uid &&
+        validRound() && key == string(request.resource.data.round) + '_' + request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+    }
+
+    match /matches/{id} {
+      // Invite links are 144-bit random identifiers. A holder can inspect a WAITING
+      // invitation to join; nobody can enumerate matches.
+      allow get: if signedIn() && (
+        resource.data.hostUid == request.auth.uid ||
+        resource.data.guestUid == request.auth.uid ||
+        (resource.data.status == 'waiting' && resource.data.guestUid == null &&
+         resource.data.expiresAt > request.time));
+      allow list: if false;
+      allow create: if signedIn() &&
+        id.matches('^[A-Za-z0-9_-]{24}$') &&
+        request.resource.data.keys().hasAll([
+          'hostUid','guestUid','hostName','guestName','status','questionIds','createdAt','expiresAt'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'hostUid','guestUid','hostName','guestName','status','questionIds','createdAt','expiresAt'
+        ]) &&
+        request.resource.data.hostUid == request.auth.uid &&
+        request.resource.data.guestUid == null &&
+        request.resource.data.guestName == null &&
+        request.resource.data.status == 'waiting' &&
+        request.resource.data.hostName is string &&
+        request.resource.data.hostName.size() > 0 &&
+        request.resource.data.hostName.size() <= 32 &&
+        request.resource.data.questionIds is list &&
+        request.resource.data.questionIds.size() == 10 &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.expiresAt is timestamp &&
+        request.resource.data.expiresAt > request.time &&
+        request.resource.data.expiresAt <= request.time + duration.value(8, 'd');
+
+      // Atomic second-player claim: only these four fields may change.
+      allow update: if signedIn() &&
+        resource.data.status == 'waiting' &&
+        resource.data.guestUid == null &&
+        resource.data.expiresAt > request.time &&
+        resource.data.hostUid != request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['guestUid','guestName','status','joinedAt']) &&
+        request.resource.data.guestUid == request.auth.uid &&
+        request.resource.data.guestName is string &&
+        request.resource.data.guestName.size() > 0 &&
+        request.resource.data.guestName.size() <= 32 &&
+        request.resource.data.status == 'playing' &&
+        request.resource.data.joinedAt == request.time;
+      allow delete: if false;
+
+      match /commits/{key} {
+        allow get, list: if participant(id);
+        allow create: if activeParticipant(id) &&
+          request.resource.data.keys().hasOnly(['uid','round','hash','createdAt']) &&
+          request.resource.data.keys().hasAll(['uid','round','hash','createdAt']) &&
+          validAnswerOwner(key) &&
+          request.resource.data.hash is string &&
+          request.resource.data.hash.matches('^[0-9a-f]{64}$');
+        allow update, delete: if false;
+      }
+      match /reveals/{key} {
+        allow get, list: if participant(id);
+        allow create: if activeParticipant(id) &&
+          request.resource.data.keys().hasOnly(['uid','round','answer','nonce','createdAt']) &&
+          request.resource.data.keys().hasAll(['uid','round','answer','nonce','createdAt']) &&
+          validAnswerOwner(key) &&
+          request.resource.data.answer is string &&
+          request.resource.data.answer.size() <= 300 &&
+          request.resource.data.nonce is string &&
+          request.resource.data.nonce.matches('^[0-9a-f]{24}$');
+        allow update, delete: if false;
+      }
+    }
+  }
+}
