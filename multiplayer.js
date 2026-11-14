@@ -287,7 +287,7 @@ async function render() {
   const id = activeMatchId;
   if (!match.guestUid) {
     const link = inviteUrl(id);
-    display(basePage('<div class="panel"><h2>✅ Invitation created</h2><p>Waiting for your opponent to join.</p><label for="inviteLink">Your private battle link</label><input id="inviteLink" readonly value="' + h(link) + '"><div class="row"><button onclick="MechOnline.share()">Share invitation</button><button class="alt" onclick="MechOnline.copy()">Copy link</button></div><p id="shareStatus" class="muted small">Send through WhatsApp or Messenger using Share.</p><p class="muted small">Only the first person to join can claim the second player place. Link expires after seven days.</p></div>', 'waiting:' + id);
+    display(basePage('<div class="panel"><h2>✅ Invitation created</h2><p>Waiting for your opponent to join.</p><label for="inviteLink">Your private battle link</label><input id="inviteLink" readonly value="' + h(link) + '"><div class="row"><button onclick="MechOnline.share()">Share invitation</button><button class="alt" onclick="MechOnline.copy()">Copy link</button></div><p id="shareStatus" class="muted small">Send through WhatsApp or Messenger using Share.</p><p class="muted small">Only the first person to join can claim the second player place. Link expires after seven days.</p></div>'), 'waiting:' + id);
     return;
   }
   const completed = currentRound();
@@ -305,12 +305,12 @@ async function render() {
   let ack = Math.max(0, Math.min(ROUNDS, Number(localStorage.getItem(acknowledgedKey) || 0)));
   if (ack < completed) {
     const [a, b] = roundScores[ack], q = env.DB[match.questionIds[ack]];
-    display(basePage(base + '<span class="tag">ROUND ' + (ack + 1) + '/' + ROUNDS + ' · REVEAL</span><h2>' + h(q?.name || 'Engineering puzzle') + '</h2><p>' + h(match.hostName) + ': ' + h(a.answer || '(no answer)') + ' — <b>' + a.points + ' points</b>' + (a.valid ? '' : ' (invalid or forfeited)') + '</p><p>' + h(match.guestName) + ': ' + h(b.answer || '(no answer)') + ' — <b>' + b.points + ' points</b>' + (b.valid ? '' : ' (invalid or forfeited)') + '</p><button onclick="MechOnline.ack()">' + (ack === ROUNDS - 1 ? 'Final results' : 'Continue') + '</button></div>', 'reveal:' + id + ':' + ack + ':' + completed + ':' + scores.join('-') + ':' + a.valid + ':' + b.valid);
+    display(basePage(base + '<span class="tag">ROUND ' + (ack + 1) + '/' + ROUNDS + ' · REVEAL</span><h2>' + h(q?.name || 'Engineering puzzle') + '</h2><p>' + h(match.hostName) + ': ' + h(a.answer || '(no answer)') + ' — <b>' + a.points + ' points</b>' + (a.valid ? '' : ' (invalid or forfeited)') + '</p><p>' + h(match.guestName) + ': ' + h(b.answer || '(no answer)') + ' — <b>' + b.points + ' points</b>' + (b.valid ? '' : ' (invalid or forfeited)') + '</p><button onclick="MechOnline.ack()">' + (ack === ROUNDS - 1 ? 'Final results' : 'Continue') + '</button></div>'), 'reveal:' + id + ':' + ack + ':' + completed + ':' + scores.join('-') + ':' + a.valid + ':' + b.valid);
     return;
   }
   if (completed >= ROUNDS) {
     const winner = scores[0] === scores[1] ? 'It’s a draw!' : (scores[0] > scores[1] ? match.hostName : match.guestName) + ' wins!';
-    display(basePage(base + '<h2>🏆 ' + h(winner) + '</h2><p>Ten rounds completed. Match results are kept in Firestore until the match is deleted.</p><button onclick="MechOnline.leave()">Back to Battle Arena</button></div>', 'finished:' + id + ':' + scores.join('-'));
+    display(basePage(base + '<h2>🏆 ' + h(winner) + '</h2><p>Ten rounds completed. Match results are kept in Firestore until the match is deleted.</p><button onclick="MechOnline.leave()">Back to Battle Arena</button></div>'), 'finished:' + id + ':' + scores.join('-'));
     return;
   }
   const q = env.DB[match.questionIds[completed]];
@@ -319,13 +319,13 @@ async function render() {
   const bothCommitted = !!commits[mine] && !!commits[theirs];
   if (bothCommitted) void tryReveal(completed);
   if (!commits[mine]) {
-    display(basePage(base + '<span class="tag">ROUND ' + (completed + 1) + '/' + ROUNDS + '</span><p>' + h(q.clue) + '</p><textarea id="battleAnswer" maxlength="300" placeholder="Name or describe the engineering subject"></textarea><p><button onclick="MechOnline.submit()">Lock my answer 🔒</button></p><p class="muted small">Your answer stays hidden until both players lock theirs. No hints in online mode yet.</p></div>', 'answer:' + id + ':' + completed);
+    display(basePage(base + '<span class="tag">ROUND ' + (completed + 1) + '/' + ROUNDS + '</span><p>' + h(q.clue) + '</p><textarea id="battleAnswer" maxlength="300" placeholder="Name or describe the engineering subject"></textarea><p><button onclick="MechOnline.submit()">Lock my answer 🔒</button></p><p class="muted small">Your answer stays hidden until both players lock theirs. No hints in online mode yet.</p></div>'), 'answer:' + id + ':' + completed);
   } else if (!bothCommitted) {
-    display(basePage(base + '<h2>🔒 Answer locked</h2><p>Waiting for your opponent to submit round ' + (completed + 1) + '.</p></div>', 'waiting-for-opponent:' + id + ':' + completed);
+    display(basePage(base + '<h2>🔒 Answer locked</h2><p>Waiting for your opponent to submit round ' + (completed + 1) + '.</p></div>'), 'waiting-for-opponent:' + id + ':' + completed);
   } else if (!reveals[mine] && !localStorage.getItem(savedAnswerKey(completed))) {
-    display(basePage(base + '<h2>🔐 Restore your answer</h2><p>Your answer was locked, but this browser has lost its local copy. You can forfeit this round so the match can continue.</p><button onclick="MechOnline.forfeit()">Forfeit this round (0 points)</button></div>', 'lost:' + id + ':' + completed);
+    display(basePage(base + '<h2>🔐 Restore your answer</h2><p>Your answer was locked, but this browser has lost its local copy. You can forfeit this round so the match can continue.</p><button onclick="MechOnline.forfeit()">Forfeit this round (0 points)</button></div>'), 'lost:' + id + ':' + completed);
   } else {
-    display(basePage(base + '<h2>🔒 Answers locked</h2><p>Both players have submitted. Verifying and revealing answers…</p></div>', 'revealing:' + id + ':' + completed);
+    display(basePage(base + '<h2>🔒 Answers locked</h2><p>Both players have submitted. Verifying and revealing answers…</p></div>'), 'revealing:' + id + ':' + completed);
   }
 }
 function ack() {
