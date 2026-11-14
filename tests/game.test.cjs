@@ -15,7 +15,8 @@ const assert = require('node:assert/strict');
       const ratchet = DB.find(q => q.name === 'Ratchet and pawl');
       const informal = evaluate('gear and latch', ratchet);
       const incorrect = evaluate('the gear and latch makes it spin faster', ratchet);
-      return { count:DB.length, entries, informal, incorrect, savedKey:localStorage.getItem('skb_mech_v2') !== null };
+      const concepts = DB.filter(q => partialConcepts[q.name]).map(q => { const sample=partialConcepts[q.name].map(g=>g[0]).join(' ')+' mechanism'; return {name:q.name, sample, result:evaluate(sample,q)}; });
+      return { count:DB.length, entries, informal, incorrect, concepts, savedKey:localStorage.getItem('skb_mech_v2') !== null };
     });
     assert.equal(results.count, 67, 'Question bank size unexpectedly changed');
     for (const item of results.entries) {
@@ -25,6 +26,8 @@ const assert = require('node:assert/strict');
     assert.equal(results.informal.ok, true);
     assert.equal(results.informal.partial, true);
     assert.equal(results.incorrect.ok, false);
+    assert.equal(results.concepts.length, 66, 'Expected 66 subject-specific concept rules');
+    for (const item of results.concepts) assert.equal(item.result.ok, true, 'Concept example rejected: '+item.name+' — '+item.sample);
     await page.getByRole('button', { name: /Battle Arena/ }).click();
     await page.getByRole('button', { name: /Online invitation setup/ }).click();
     assert.equal(await page.locator('#onlineName').inputValue(), 'Chris');
@@ -34,6 +37,6 @@ const assert = require('node:assert/strict');
     await page.getByRole('button', { name: /Start offline battle/ }).click();
     assert.match(await page.locator('#app').innerText(), /ROUND 1\/5/);
     assert.equal(errors.length, 0, 'Browser JS errors: '+errors.join('; '));
-    console.log('PASS: 67 technical answers, 67 nonsense answers, partial credit, contradiction, invitation safety, offline navigation, browser JS.');
+    console.log('PASS: 67 technical answers, 67 nonsense answers, 66 concept examples, partial credit, contradiction, invitation safety, offline navigation, browser JS.');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
