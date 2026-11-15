@@ -28,6 +28,21 @@ service cloud.firestore {
         request.resource.data.createdAt == request.time;
     }
 
+    function canReadSealed(id) {
+      let m = matchData(id);
+      let hostLast = '9_' + m.hostUid;
+      let guestLast = '9_' + m.guestUid;
+      return participant(id) && m.mode == 'independent' &&
+        m.protocol == 'sealed-v1' &&
+        exists(/databases/$(database)/documents/matches/$(id)/sealedAnswers/$(hostLast)) &&
+        exists(/databases/$(database)/documents/matches/$(id)/sealedAnswers/$(guestLast));
+    }
+    function followsPreviousSealed(id) {
+      let previous = string(request.resource.data.round - 1) + '_' + request.auth.uid;
+      return request.resource.data.round == 0 ||
+        exists(/databases/$(database)/documents/matches/$(id)/sealedAnswers/$(previous));
+    }
+
     match /matches/{id} {
       // Invite links are 144-bit random identifiers. A holder can inspect a WAITING
       // invitation to join; nobody can enumerate matches.
@@ -43,13 +58,16 @@ service cloud.firestore {
           'hostUid','guestUid','hostName','guestName','status','questionIds','createdAt','expiresAt'
         ]) &&
         request.resource.data.keys().hasOnly([
-          'hostUid','guestUid','hostName','guestName','status','mode','questionIds','createdAt','expiresAt'
+          'hostUid','guestUid','hostName','guestName','status','mode','protocol','questionIds','createdAt','expiresAt'
         ]) &&
         request.resource.data.hostUid == request.auth.uid &&
         request.resource.data.guestUid == null &&
         request.resource.data.guestName == null &&
         request.resource.data.status == 'waiting' &&
         request.resource.data.mode in ['live','independent'] &&
+        (request.resource.data.mode == 'live' ||
+          ('protocol' in request.resource.data &&
+           request.resource.data.protocol == 'sealed-v1')) &&
         request.resource.data.hostName is string &&
         request.resource.data.hostName.size() > 0 &&
         request.resource.data.hostName.size() <= 32 &&
@@ -76,6 +94,24 @@ service cloud.firestore {
         request.resource.data.joinedAt == request.time;
       allow delete: if false;
 
+      // Only participants can write their own immutable answer. Firestore
+      // cannot reveal ANY answers until both final (round 9) documents exist.
+      // Ordered writes enforce that all prior 9 rounds were submitted first.
+      // This lets one player disconnect before the other finishes.
+      match /sealedAnswers/{key} {
+        allow get, list: if canReadSealed(id);
+        allow create: if activeParticipant(id) &&
+          matchData(id).mode == 'independent' &&
+          matchData(id).protocol == 'sealed-v1' &&
+          request.resource.data.keys().hasOnly(['uid','round','answer','createdAt']) &&
+          request.resource.data.keys().hasAll(['uid','round','answer','createdAt']) &&
+          validAnswerOwner(key) &&
+          followsPreviousSealed(id) &&
+          request.resource.data.answer is string &&
+          request.resource.data.answer.size() > 0 &&
+          request.resource.data.answer.size() <= 300;
+        allow update, delete: if false;
+      }
       match /commits/{key} {
         allow get, list: if participant(id);
         allow create: if activeParticipant(id) &&
