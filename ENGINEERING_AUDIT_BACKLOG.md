@@ -42,3 +42,10 @@ Updated: 2026-11-15 (UTC). Evidence level: repository API inspection only; no fu
 - Inspected actual home UI, localStorage parsing/normalisation, save function and existing browser suite. Added `tests/persistence.test.cjs` (commit `58edd046`) testing seeded XP, discovery and invention across reloads, malformed JSON recovery, invalid saved shapes and browser exceptions on the actual index.html.
 - Integrated the persistence test into GitHub Actions workflow (commit `53583ed5`). Both commits were accepted by GitHub; CI outcome remains unverified. Do not label these new checks passed until a workflow result is inspected.
 - Attempted to inspect workflow runs through the available interfaces; repository Actions web page could not be fetched in this environment and the connected GitHub API exposes jobs only with a known run ID. Next priority: obtain workflow run ID/status, inspect job logs, correct failures and expand deployed-app end-to-end coverage.
+
+## 2026-11-15 independent engineering run: malformed invention recovery
+- Root cause found by source inspection: saved `ideas` was only checked for array type, allowing null/non-object entries; the Workshop view dereferences `x.question` and `x.idea`, which can throw and leave the screen broken.
+- Fixed initial saved-data normalization to retain only object entries with string `question` and `idea` fields. Commit `b112ea1ee5c4a299934420bbe0b1ddde80896629`.
+- Added a browser regression in `tests/persistence.test.cjs` seeding null, numeric, empty-object and valid entries, checking Workshop loads and valid invention survives. Commit `8c19953f2fa31835a0089191e30042d54e2387b4`.
+- Verification: GitHub accepted both commits; re-fetched production file, test file and CI workflow; confirmed fix, regression and CI command are present. Test source parsed as JavaScript. Chromium execution, GitHub Actions pass and production deployment remain **unverified**.
+- Next: run CI browser suite and inspect logs; test malformed `solved` and numeric win/loss fields, investigate actual Firebase rules integration, and perform deployed mobile/desktop smoke checks. No user progress keys were renamed or reset.
