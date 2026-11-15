@@ -32,6 +32,24 @@ async function main() {
       });
     });
 
+    // Match creation must reject malformed, duplicated and out-of-range question IDs.
+    const newMatch = (ids) => ({
+      hostUid:host,guestUid:null,hostName:'Host',guestName:null,
+      status:'waiting',mode:'independent',protocol:'sealed-v1',
+      questionIds:ids,createdAt:serverTimestamp(),
+      expiresAt:Timestamp.fromMillis(Date.now()+3600000)
+    });
+    const candidates=[
+      [0,1,2,3,4,5,6,7,8,8],
+      [0,1,2,3,4,5,6,7,8,67],
+      [0,1,2,3,4,5,6,7,8,'9'],
+      [0,1,2,3,4,5,6,7,8,-1]
+    ];
+    for(let i=0;i<candidates.length;i++){
+      await assertFails(setDoc(doc(hostDb,'matches',String(i+1).padStart(24,'B')),newMatch(candidates[i])));
+    }
+    await assertSucceeds(setDoc(doc(hostDb,'matches','C'.repeat(24)),newMatch([0,1,2,3,4,5,6,7,8,66])));
+
     await assertFails(getDocs(collection(hostDb,sealedPath)));
     await assertFails(getDocs(collection(guestDb,sealedPath)));
     await assertFails(setDoc(sealed(guestDb,0,host),{
