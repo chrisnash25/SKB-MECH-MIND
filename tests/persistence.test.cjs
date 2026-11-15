@@ -37,6 +37,14 @@ const url = pathToFileURL(path.resolve(__dirname, '../index.html')).href;
     await page.reload();
     assert.match(await page.locator('#app').innerText(),/0 XP/,'Invalid XP not normalised');
     await page.getByRole('button',{name:/My Workshop/}).click();
+    // Malformed invention entries must not crash the Workshop view.
+    await page.evaluate(()=>localStorage.setItem('skb_mech_v2',JSON.stringify({
+      xp:12,solved:[],ideas:[null,42,{}, {question:'Valid idea',idea:'Test the design'}],bestScores:{}
+    })));
+    await page.reload();
+    await page.getByRole('button',{name:/My Workshop/}).click();
+    assert.match(await page.locator('#app').innerText(),/Valid idea/,'Valid invention discarded');
+    assert.doesNotMatch(await page.locator('#app').innerText(),/undefined/,'Invalid invention leaked into UI');
     assert.deepEqual(errors,[],'Unexpected browser exceptions: '+errors.join('; '));
     console.log('PASS: saved XP, discoveries, inventions, reloads, malformed and invalid local storage');
     await context.close();
