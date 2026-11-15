@@ -54,6 +54,17 @@ async function main() {
       await assertFails(setDoc(doc(hostDb,'matches',String(i+1).padStart(24,'B')),newMatch(candidates[i])));
     }
     await assertSucceeds(setDoc(doc(hostDb,'matches','C'.repeat(24)),newMatch([0,1,2,3,4,5,6,7,8,66])));
+
+    // An invitation cannot be created anonymously or on behalf of another user.
+    // This is a real emulator rules check, not a mocked client-side validation.
+    await assertFails(setDoc(doc(anonymousDb,'matches','D'.repeat(24)),
+      newMatch([0,1,2,3,4,5,6,7,8,9])));
+    await assertFails(setDoc(doc(guestDb,'matches','E'.repeat(24)),
+      newMatch([0,1,2,3,4,5,6,7,8,9])));
+    // Guest can create an invitation only when claiming their own identity.
+    await assertSucceeds(setDoc(doc(guestDb,'matches','F'.repeat(24)),{
+      ...newMatch([0,1,2,3,4,5,6,7,8,9]),hostUid:guest
+    }));
     await assertSucceeds(setDoc(doc(hostDb,'matches','D'.repeat(24)),newMatch([66,65,64,63,62,61,60,59,58,57])));
 
     await assertFails(getDocs(collection(hostDb,sealedPath)));
