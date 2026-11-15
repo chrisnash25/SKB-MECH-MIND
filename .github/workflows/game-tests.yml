@@ -43,6 +43,8 @@ jobs:
         run: node tests/game.test.cjs
       - name: Test mobile touch navigation and responsive layouts
         run: node tests/mobile.test.cjs
+      - name: Test Mechanism Lab Next experiment rotation
+        run: node tests/lab-rotation.test.cjs
       - name: Test saved progress and corrupted storage recovery
         run: node tests/persistence.test.cjs
       - name: Syntax-check Firebase multiplayer module
