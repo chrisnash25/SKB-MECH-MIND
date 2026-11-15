@@ -5,6 +5,7 @@ on:
       - 'index.html'
       - 'multiplayer.js'
       - 'firestore.rules'
+      - 'firebase.json'
       - 'tests/**'
       - '.github/workflows/game-tests.yml'
   pull_request:
@@ -12,6 +13,7 @@ on:
       - 'index.html'
       - 'multiplayer.js'
       - 'firestore.rules'
+      - 'firebase.json'
       - 'tests/**'
       - '.github/workflows/game-tests.yml'
   workflow_dispatch:
@@ -29,9 +31,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install Playwright and Chromium
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install browser and Firebase emulator test tools
         run: |
-          npm install --no-save playwright@1.58.2
+          npm install --no-save playwright@1.58.2 firebase@13.3.0 @firebase/rules-unit-testing@6.0.0 firebase-tools@15.36.0
           npx playwright install --with-deps chromium
       - name: Run browser regression suite
         run: node tests/game.test.cjs
@@ -43,6 +49,8 @@ jobs:
         run: node --input-type=module --check < multiplayer.js
       - name: Simulate two-phone online battles in Chromium
         run: node tests/multiplayer.test.cjs
+      - name: Verify actual Firestore Security Rules in emulator
+        run: npx firebase emulators:exec --only firestore --project demo-mech-mind-rules "node tests/firestore-rules.test.cjs"
       - name: Upload mobile failure screenshots
         if: failure()
         uses: actions/upload-artifact@v4
