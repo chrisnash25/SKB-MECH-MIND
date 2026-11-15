@@ -1,3 +1,12 @@
+## Follow-up engineering run — 15 November 2026
+
+- Inspected latest repository head 93db4dd, Firestore rules, emulator test and workflow. Prior regression run 43761002202 passed. Production Firebase and two real phones remain unverified.
+- P1 question-index integrity: new-match creation formerly accepted duplicate, string and out-of-range IDs. Added explicit integer bounds 0..66 and uniqueness for ten IDs (commit f7091566). The 67-question count must be revised if the catalogue grows.
+- Added Firebase emulator regressions for duplicate, out-of-range, negative and string IDs, plus valid distinct IDs including 66 (commit adf761b6).
+- CI run 43765831359 was pending at last check; do not claim these tests passed until its result is confirmed. Prior rules-only run 43765821836 was in progress.
+- Release gate: repository rules are not automatically published to production Firebase. Publish only after verified emulator results and compatibility review. Existing matches are not rewritten.
+- Next: check CI 43765831359, fix failures, verify real deployed gameplay, production rules, two-device authentication/reconnect/expiry and forged answers; continue mobile, accessibility, mechanism and cross-project audits.
+
 # Engineering audit backlog
 
 ## Latest engineering handoff — 15 November 2026, approximately 20:48–21:00 UTC
