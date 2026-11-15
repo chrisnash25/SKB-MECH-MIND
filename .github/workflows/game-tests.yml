@@ -37,6 +37,8 @@ jobs:
         run: node tests/game.test.cjs
       - name: Test mobile touch navigation and responsive layouts
         run: node tests/mobile.test.cjs
+      - name: Test saved progress and corrupted storage recovery
+        run: node tests/persistence.test.cjs
       - name: Syntax-check Firebase multiplayer module
         run: node --input-type=module --check < multiplayer.js
       - name: Simulate two-phone online battles in Chromium
