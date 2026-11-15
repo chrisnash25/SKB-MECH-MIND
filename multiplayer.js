@@ -79,6 +79,7 @@ function shuffledIndices(count) {
   return ids.slice(0, ROUNDS);
 }
 function roundKey(round, uid) { return round + '_' + uid; }
+function independent() { return match?.mode === 'independent'; }
 function nickname() { return (document.getElementById('onlineName')?.value || '').trim().slice(0, 32); }
 function basePage(body) {
   return '<button class="alt" onclick="MechOnline.leave()">← Battle Arena</button><h1>🌐 Online Battle Arena</h1>' + body +
@@ -88,7 +89,7 @@ function openWelcome(id) {
   if (id) {
     display(basePage('<div class="panel"><h2>⚔️ You have been invited!</h2><p>Join a ten-round engineering challenge from your own phone.</p><label for="onlineName">Your display name</label><input id="onlineName" maxlength="32" value="' + h(localStorage.getItem('mm_nickname') || 'Player 2') + '"><p><button onclick="MechOnline.join()">Join this battle</button></p></div>'));
   } else {
-    display(basePage('<div class="panel"><h2>⚔️ Invite a friend</h2><p>Create a ten-round battle and share the invitation through WhatsApp, Messenger or any other app.</p><label for="onlineName">Your display name</label><input id="onlineName" maxlength="32" value="' + h(localStorage.getItem('mm_nickname') || 'Chris') + '"><p><button onclick="MechOnline.create()">Create invitation link</button></p><p class="muted small">Links expire after seven days. Both players can close and reopen the match.</p></div>'));
+    display(basePage('<div class="panel"><h2>⚔️ Invite a friend</h2><p>Create a ten-round battle and share the invitation through WhatsApp, Messenger or any other app.</p><label for="onlineName">Your display name</label><input id="onlineName" maxlength="32" value="' + h(localStorage.getItem('mm_nickname') || 'Chris') + '"><p><label for="battleMode">Mode</label><select id="battleMode"><option value="live">Live Duel</option><option value="independent">Independent Battle</option></select></p><p><button onclick="MechOnline.create()">Create invitation link</button></p><p class="muted small">Links expire after seven days. Both players can close and reopen the match.</p></div>'));
   }
 }
 async function open(options) {
@@ -130,9 +131,10 @@ async function create() {
   try {
     localStorage.setItem('mm_nickname', name);
     const id = code();
+    const mode = document.getElementById('battleMode')?.value === 'independent' ? 'independent' : 'live';
     await setDoc(doc(db, 'matches', id), {
       hostUid: user.uid, guestUid: null, hostName: name, guestName: null,
-      status: 'waiting', questionIds: shuffledIndices(env.DB.length),
+      status: 'waiting', mode, questionIds: shuffledIndices(env.DB.length),
       createdAt: serverTimestamp(),
       expiresAt: Timestamp.fromMillis(Date.now() + MATCH_LIFETIME_MS)
     });
@@ -217,7 +219,7 @@ async function digest(id, round, uid, nonce, answer) {
 function savedAnswerKey(round) { return 'mm_pending_' + activeMatchId + '_' + round + '_' + user.uid; }
 async function submit() {
   if (busy || !match?.guestUid) return;
-  const round = currentRound();
+  const round = independent() ? independentRound() : currentRound();
   if (round >= ROUNDS || commits[roundKey(round, user.uid)]) return;
   const answer = (document.getElementById('battleAnswer')?.value || '').trim().slice(0, 300);
   if (!answer) return alert('Enter your answer first.');
@@ -233,6 +235,13 @@ async function submit() {
   } catch (error) { showError(error); }
   finally { busy = false; }
 }
+function independentRound() {
+  for(let r=0;r<ROUNDS;r++) if(!commits[roundKey(r,user.uid)]) return r;
+  return ROUNDS;
+}
+function everyoneFinished() {
+  return [match.hostUid,match.guestUid].every(uid=>Array.from({length:ROUNDS},(_,r)=>roundKey(r,uid)).every(k=>!!commits[k]));
+}
 function currentRound() {
   if (!match?.guestUid) return 0;
   for (let r = 0; r < ROUNDS; r++) {
@@ -245,6 +254,7 @@ async function tryReveal(round) {
   if (reveals[key] || revealing.has(key)) return;
   const pair = [roundKey(round, match.hostUid), roundKey(round, match.guestUid)];
   if (!pair.every(k => commits[k])) return;
+  if (independent() && !everyoneFinished()) return;
   const stored = localStorage.getItem(savedAnswerKey(round));
   if (!stored) return;
   revealing.add(key);
@@ -281,6 +291,33 @@ async function scoreFor(round, uid) {
   const evaluated = env.evaluate(reveal.answer, question);
   return {points: evaluated.ok ? (evaluated.partial ? 70 : 140) : 0, answer: reveal.answer, valid: true};
 }
+async function renderIndependent(id, gen) {
+  const round=independentRound();
+  if(!everyoneFinished()){
+    if(round===ROUNDS) display(basePage('<div class="panel"><h2>🏁 Finished!</h2><p>Waiting for your opponent to finish all 10 questions.</p></div>'),'ind-wait:'+id);
+    else {
+      const q=env.DB[match.questionIds[round]];
+      if(!q) return showError(new Error('Question unavailable'));
+      display(basePage('<div class="panel"><span class="tag">INDEPENDENT · '+(round+1)+'/10</span><p>'+h(q.clue)+'</p><textarea id="battleAnswer" maxlength="300" placeholder="Your answer"></textarea><button onclick="MechOnline.submit()">Lock answer and continue</button><p class="muted small">Answers remain hidden until both players finish.</p></div>'),'ind-question:'+id+':'+round);
+    }
+    return;
+  }
+  for(let r=0;r<ROUNDS;r++) void tryReveal(r);
+  const ready=[match.hostUid,match.guestUid].every(uid=>Array.from({length:ROUNDS},(_,r)=>roundKey(r,uid)).every(k=>!!reveals[k]));
+  if(!ready) {
+    display(basePage('<div class="panel"><h2>🔐 Both finished</h2><p>Verifying answers. Keep this page open.</p></div>'),'ind-revealing:'+id);
+    return;
+  }
+  let scores=[0,0], rows=[];
+  for(let r=0;r<ROUNDS;r++){
+    const [a,b]=await Promise.all([scoreFor(r,match.hostUid),scoreFor(r,match.guestUid)]);
+    if(gen!==renderGeneration)return;
+    scores[0]+=a.points;scores[1]+=b.points;
+    rows.push('<p><b>'+(r+1)+'. '+h(env.DB[match.questionIds[r]]?.name||'Question')+'</b><br>'+h(match.hostName)+': '+h(a.answer)+' ('+a.points+')<br>'+h(match.guestName)+': '+h(b.answer)+' ('+b.points+')</p>');
+  }
+  const winner=scores[0]===scores[1]?'Draw!':h(scores[0]>scores[1]?match.hostName:match.guestName)+' wins!';
+  display(basePage('<div class="panel"><h2>🏆 '+winner+'</h2><p>'+h(match.hostName)+': '+scores[0]+' · '+h(match.guestName)+': '+scores[1]+'</p><h3>Answer breakdown</h3>'+rows.join('')+'<button onclick="MechOnline.leave()">Back to Arena</button></div>'),'ind-result:'+id+':'+scores.join('-'));
+}
 async function render() {
   if (!env || !match) return;
   const gen = ++renderGeneration;
@@ -290,6 +327,7 @@ async function render() {
     display(basePage('<div class="panel"><h2>✅ Invitation created</h2><p>Waiting for your opponent to join.</p><label for="inviteLink">Your private battle link</label><input id="inviteLink" readonly value="' + h(link) + '"><div class="row"><button onclick="MechOnline.share()">Share invitation</button><button class="alt" onclick="MechOnline.copy()">Copy link</button></div><p id="shareStatus" class="muted small">Send through WhatsApp or Messenger using Share.</p><p class="muted small">Only the first person to join can claim the second player place. Link expires after seven days.</p></div>'), 'waiting:' + id);
     return;
   }
+  if(independent()) { await renderIndependent(id,gen); return; }
   const completed = currentRound();
   const scores = [0, 0], roundScores = [];
   for (let r = 0; r < completed; r++) {
