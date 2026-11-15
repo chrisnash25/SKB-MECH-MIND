@@ -56,3 +56,10 @@ Updated: 2026-11-15 (UTC). Evidence level: repository API inspection only; no fu
 - Production fix committed as `9d27a18bb1cb842aa60d98f4410fa6dc0ddd74eb`: filter non-string discovery entries; reset invalid wins/losses to zero while preserving valid saved values and storage key.
 - Regression added as `bdadf4165097d7006aff1d0db91451daa7054e3d` in `tests/persistence.test.cjs`; checks two valid discoveries and repaired battle totals.
 - Evidence: GitHub accepted both commits. This runtime could not clone repository (GitHub DNS resolution failed). Browser test execution, GitHub Actions result and deployed-game verification are NOT established. Next: run persistence test in CI, check actual output; inspect malformed `bestScores` values and real multiplayer authentication/rules; continue full 67-subject and deployed mobile audits.
+
+## 2026-11-15 03:26 UTC engineering pass: best-score recovery
+- Inspected recent commits, audit backlog, production persistence logic and browser regression. Open GitHub issues search returned none; repository README missing. Previous browser/CI/deployed verification remains open.
+- Root cause: `bestScores` was validated as an object only. Invalid strings/negative values could be coerced or retained, interfering with XP award calculations. Reproduce by storing malformed best scores under `skb_mech_v2`, reloading and invoking `awardBest`.
+- Fixed in `41d37d7a6b4a32f32166582fbbb69e32ef3c369b`: retain finite numeric best scores between 0 and 100; discard invalid entries, preserving valid progress and existing storage key.
+- Added browser regression in `c483cb9dc30421e787cf87458b76d807c6cdc552`: reload malformed scores, verify valid entries survive and XP can be awarded after repair.
+- Evidence: GitHub accepted both commits. Browser test, deployed behaviour, CI pass and two-client Firebase validation were NOT executed/verified. Next: execute CI regression, inspect logs, check game score maxima and actual Firebase security rules, then full 67-subject/mobile audit.
