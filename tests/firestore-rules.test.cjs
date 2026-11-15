@@ -43,12 +43,18 @@ async function main() {
       [0,1,2,3,4,5,6,7,8,8],
       [0,1,2,3,4,5,6,7,8,67],
       [0,1,2,3,4,5,6,7,8,'9'],
-      [0,1,2,3,4,5,6,7,8,-1]
+      [0,1,2,3,4,5,6,7,8,-1],
+      [0,1,2,3,4,5,6,7,8],                 // Too few questions
+      [0,1,2,3,4,5,6,7,8,9,10],            // Too many questions
+      [0,1,2,3,4,5,6,7,8,9.5],             // Fractional index
+      [0,1,2,3,4,5,6,7,8,null],            // Null index
+      [0,1,2,3,4,5,6,7,8,true]             // Boolean index
     ];
     for(let i=0;i<candidates.length;i++){
       await assertFails(setDoc(doc(hostDb,'matches',String(i+1).padStart(24,'B')),newMatch(candidates[i])));
     }
     await assertSucceeds(setDoc(doc(hostDb,'matches','C'.repeat(24)),newMatch([0,1,2,3,4,5,6,7,8,66])));
+    await assertSucceeds(setDoc(doc(hostDb,'matches','D'.repeat(24)),newMatch([66,65,64,63,62,61,60,59,58,57])));
 
     await assertFails(getDocs(collection(hostDb,sealedPath)));
     await assertFails(getDocs(collection(guestDb,sealedPath)));
