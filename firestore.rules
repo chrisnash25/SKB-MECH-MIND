@@ -18,6 +18,20 @@ service cloud.firestore {
       return participant(id) && matchData(id).status == 'playing' &&
         matchData(id).expiresAt > request.time;
     }
+    function validQuestionIds(ids) {
+      return ids is list && ids.size() == 10 &&
+        ids[0] is int && ids[0] >= 0 && ids[0] < 67 &&
+        ids[1] is int && ids[1] >= 0 && ids[1] < 67 &&
+        ids[2] is int && ids[2] >= 0 && ids[2] < 67 &&
+        ids[3] is int && ids[3] >= 0 && ids[3] < 67 &&
+        ids[4] is int && ids[4] >= 0 && ids[4] < 67 &&
+        ids[5] is int && ids[5] >= 0 && ids[5] < 67 &&
+        ids[6] is int && ids[6] >= 0 && ids[6] < 67 &&
+        ids[7] is int && ids[7] >= 0 && ids[7] < 67 &&
+        ids[8] is int && ids[8] >= 0 && ids[8] < 67 &&
+        ids[9] is int && ids[9] >= 0 && ids[9] < 67 &&
+        ids.toSet().size() == 10;
+    }
     function validRound() {
       return request.resource.data.round is int &&
         request.resource.data.round >= 0 && request.resource.data.round < 10;
@@ -71,8 +85,7 @@ service cloud.firestore {
         request.resource.data.hostName is string &&
         request.resource.data.hostName.size() > 0 &&
         request.resource.data.hostName.size() <= 32 &&
-        request.resource.data.questionIds is list &&
-        request.resource.data.questionIds.size() == 10 &&
+        validQuestionIds(request.resource.data.questionIds) &&
         request.resource.data.createdAt == request.time &&
         request.resource.data.expiresAt is timestamp &&
         request.resource.data.expiresAt > request.time &&
