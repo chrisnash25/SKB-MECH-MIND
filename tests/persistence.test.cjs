@@ -45,6 +45,17 @@ const url = pathToFileURL(path.resolve(__dirname, '../index.html')).href;
     await page.getByRole('button',{name:/My Workshop/}).click();
     assert.match(await page.locator('#app').innerText(),/Valid idea/,'Valid invention discarded');
     assert.doesNotMatch(await page.locator('#app').innerText(),/undefined/,'Invalid invention leaked into UI');
+    // Preserve valid discoveries while excluding malformed entries; reset invalid battle totals.
+    await page.evaluate(()=>localStorage.setItem('skb_mech_v2',JSON.stringify({
+      xp:19,solved:[null,23,'Ratchet and pawl',{},'Cam and follower'],
+      wins:-3,losses:'five',ideas:[],bestScores:{}
+    })));
+    await page.reload();
+    assert.match(await page.locator('#app').innerText(),/2 discoveries/,'Malformed discoveries counted');
+    await page.getByRole('button',{name:/My Workshop/}).click();
+    const repaired=await page.evaluate(()=>({solved:data.solved,wins:data.wins,losses:data.losses}));
+    assert.deepEqual(repaired,{solved:['Ratchet and pawl','Cam and follower'],wins:0,losses:0},
+      'Invalid saved discovery or battle data not normalised');
     assert.deepEqual(errors,[],'Unexpected browser exceptions: '+errors.join('; '));
     console.log('PASS: saved XP, discoveries, inventions, reloads, malformed and invalid local storage');
     await context.close();
