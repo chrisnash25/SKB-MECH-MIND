@@ -1,5 +1,26 @@
 # Engineering audit backlog
 
+## Latest engineering handoff — 15 November 2026, approximately 20:48–21:00 UTC
+
+**Fix delivered: Independent Battle now supports delayed results without both phones being online together.** Previously, the first player had to reconnect after the other finished to disclose locally stored answers. A fully completed host could leave a match stranded. This violated the asynchronous battle requirement. The new `sealed-v1` protocol writes each immutable answer to Firestore atomically with its corresponding commitment; Security Rules deny retrieval until each participant has written their tenth answer. New matches use the protocol; existing matches continue using the legacy flow.
+
+**Code:** [client `56766445`](https://github.com/chrisnash25/SKB-MECH-MIND/commit/56766445e88d3448a2c16fb1455223482f634e69), [rules `559d4205`](https://github.com/chrisnash25/SKB-MECH-MIND/commit/559d420573847bbbf72c7024b14e74a8b9396219), [two-browser test `1cf7eb4b`](https://github.com/chrisnash25/SKB-MECH-MIND/commit/1cf7eb4b755242a1dd91cc284563604b99532384), emulator setup and test `4d96b430` / `4f11a31f`, CI update `87d52af9`, setup guide update `b74b2a95`.
+
+**Execution evidence:** [GitHub Actions run 43761002202](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43761002202) completed successfully at approximately 20:59 UTC. The following checks actually ran and passed: 67 engineering name answers and 66 concept examples; mobile navigation/overflow at widths 320/360/390/430/768 px; saved-progress recovery; Live Duel across two browser contexts; Independent Battle host finishing ten rounds then closing browser while the guest finishes; read attempt before both complete returning denial in the simulated backend; and the **real local Firebase Firestore emulator** rejecting premature reads, outsider access, out-of-order answer writes, impersonation and answer overwrites, then permitting both participants to read all 20 documents after completion. Browser game checks use a simulated backend; rules checks use the actual local Firestore emulator. Neither constitutes a test against the production Firebase project.
+
+**Release gate — required user/project action:** The latest `firestore.rules` file must be **published in the Mech Mind Firebase console** before any new Independent Battle invitations can use `sealed-v1`. The GitHub repository is not connected to Firebase deployment permissions; no live production rules deployment is verified. Live multiplayer with two real phones is not verified. Keep a visible distinction between CI, local emulator and production. No service credentials were requested or stored.
+
+**Remaining highest priorities:**
+1. P0: Publish/test actual project Firestore rules; test two independent real devices with host closing browser before guest completes, plus failure/reconnect cases and permissions.
+2. P1: Validate all ten question indices and uniqueness in Firestore match creation rules, including adversarial inputs and legacy compatibility.
+3. P1: Test malicious players submitting forged commitments or bypassing expected flow; ranked authoritative scoring requires a trusted backend beyond client-only Spark.
+4. P1: Ensure expired or abandoned matches are cleaned up without accidental quota/cost escalation, and provide visible expiry/reconnect handling.
+5. P1: Automated cross-browser visual checks, mechanism accuracy, interactive gameplay on Android and coverage of independent mid-battle reconnect.
+6. P2: Add caching for the Firestore emulator in GitHub Actions to avoid unnecessary downloads; migrate CI dependency installation to reproducible lock files.
+
+---
+
+
 Updated: 2026-11-15 (UTC). Evidence level: repository API inspection only; no full deployed gameplay test completed in this audit.
 
 ## Audit scope and evidence
