@@ -56,6 +56,17 @@ const url = pathToFileURL(path.resolve(__dirname, '../index.html')).href;
     const repaired=await page.evaluate(()=>({solved:data.solved,wins:data.wins,losses:data.losses}));
     assert.deepEqual(repaired,{solved:['Ratchet and pawl','Cam and follower'],wins:0,losses:0},
       'Invalid saved discovery or battle data not normalised');
+    // Invalid historic best scores must not block legitimate future XP awards.
+    await page.evaluate(()=>localStorage.setItem('skb_mech_v2',JSON.stringify({
+      xp:20,solved:[],ideas:[],wins:0,losses:0,
+      bestScores:{'mechanism:Ratchet and pawl':'not-a-score','mechanism:Cam and follower':-9,'mechanism:Crankshaft':42}
+    })));
+    await page.reload();
+    const scores=await page.evaluate(()=>data.bestScores);
+    assert.deepEqual(scores,{'mechanism:Crankshaft':42},'Invalid best scores were retained');
+    const earned=await page.evaluate(()=>awardBest('mechanism','Ratchet and pawl',50));
+    assert.equal(earned,50,'Invalid prior score suppressed legitimate XP');
+    assert.equal(await page.evaluate(()=>data.xp),70,'XP award after score repair incorrect');
     assert.deepEqual(errors,[],'Unexpected browser exceptions: '+errors.join('; '));
     console.log('PASS: saved XP, discoveries, inventions, reloads, malformed and invalid local storage');
     await context.close();
