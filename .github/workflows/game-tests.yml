@@ -35,7 +35,16 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run browser regression suite
         run: node tests/game.test.cjs
+      - name: Test mobile touch navigation and responsive layouts
+        run: node tests/mobile.test.cjs
       - name: Syntax-check Firebase multiplayer module
         run: node --input-type=module --check < multiplayer.js
       - name: Simulate two-phone online battles in Chromium
         run: node tests/multiplayer.test.cjs
+      - name: Upload mobile failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-regression-failures
+          path: mobile-failure-*.png
+          if-no-files-found: ignore
