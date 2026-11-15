@@ -9,6 +9,14 @@
 
 # Engineering audit backlog
 
+## Engineering loop handoff — 2026-11-15, subsequent run
+
+- **Verified prior change:** GitHub Actions [43765831359](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43765831359) completed successfully for commit `adf761b6`, including browser regression, mobile layout, persistence, two-context simulated multiplayer, and real Firestore rules emulator steps. This is not evidence of production Firebase rules deployment or two physical phones.
+- **Expanded regression:** commit `99898c44` adds rejected match-creation cases for nine or eleven question IDs, fractional, null and boolean indices; adds a second valid boundary-range selection. The production rule is unchanged. GitHub accepted the commit, but its new workflow [43771388381](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43771388381) was queued when checked; do not label it passed until confirmed.
+- **Highest release blocker:** The updated `firestore.rules` has not been verified as deployed to the production Firebase project. GitHub Pages deployment success does not deploy Firestore rules. Verify production permissions and two real-device delayed Independent Battles before describing production multiplayer as secure or complete.
+- **Further priorities:** Add explicit expired-match and reconnect coverage; verify all 67 puzzle animations and partial-credit semantics in deployed Android browsers; inspect accessibility, performance and other authorised projects in separate evidence-backed passes. No live credentials or Firebase production data were accessed.
+
+
 ## Latest engineering handoff — 15 November 2026, approximately 20:48–21:00 UTC
 
 **Fix delivered: Independent Battle now supports delayed results without both phones being online together.** Previously, the first player had to reconnect after the other finished to disclose locally stored answers. A fully completed host could leave a match stranded. This violated the asynchronous battle requirement. The new `sealed-v1` protocol writes each immutable answer to Firestore atomically with its corresponding commitment; Security Rules deny retrieval until each participant has written their tenth answer. New matches use the protocol; existing matches continue using the legacy flow.
