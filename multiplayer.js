@@ -3,7 +3,7 @@
 // Scores are computed in the clients. Use a trusted backend for competitive anti-cheat.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js';
 import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js';
-import { getFirestore, doc, collection, getDoc, setDoc, runTransaction, onSnapshot, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js';
+import { getFirestore, doc, collection, getDoc, setDoc, runTransaction, writeBatch, onSnapshot, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAvKeKMECGMZLgmLHNt6BmCYa70alp7haU',
@@ -19,8 +19,8 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const ROUNDS = 10;
 const MATCH_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
-let env, user, activeMatchId = '', match = null, commits = {}, reveals = {};
-let unsubscribes = [], childSubscribed = false, lastView = '', renderGeneration = 0;
+let env, user, activeMatchId = '', match = null, commits = {}, reveals = {}, sealedAnswers = {};
+let unsubscribes = [], childSubscribed = false, sealedSubscribed = false, lastView = '', renderGeneration = 0;
 let busy = false, revealing = new Set();
 
 function h(text) {
@@ -30,9 +30,11 @@ function clearListeners() {
   unsubscribes.forEach(unsub => unsub());
   unsubscribes = [];
   childSubscribed = false;
+  sealedSubscribed = false;
   match = null;
   commits = {};
   reveals = {};
+  sealedAnswers = {};
   lastView = '';
   renderGeneration++;
 }
@@ -80,6 +82,7 @@ function shuffledIndices(count) {
 }
 function roundKey(round, uid) { return round + '_' + uid; }
 function independent() { return match?.mode === 'independent'; }
+function sealedProtocol() { return independent() && match?.protocol === 'sealed-v1'; }
 function nickname() { return (document.getElementById('onlineName')?.value || '').trim().slice(0, 32); }
 function basePage(body) {
   return '<button class="alt" onclick="MechOnline.leave()">← Battle Arena</button><h1>🌐 Online Battle Arena</h1>' + body +
@@ -134,7 +137,7 @@ async function create() {
     const mode = document.getElementById('battleMode')?.value === 'independent' ? 'independent' : 'live';
     await setDoc(doc(db, 'matches', id), {
       hostUid: user.uid, guestUid: null, hostName: name, guestName: null,
-      status: 'waiting', mode, questionIds: shuffledIndices(env.DB.length),
+      status: 'waiting', mode, ...(mode === 'independent' ? {protocol: 'sealed-v1'} : {}), questionIds: shuffledIndices(env.DB.length),
       createdAt: serverTimestamp(),
       expiresAt: Timestamp.fromMillis(Date.now() + MATCH_LIFETIME_MS)
     });
@@ -227,10 +230,22 @@ async function submit() {
   try {
     const nonce = [...crypto.getRandomValues(new Uint8Array(12))].map(b => b.toString(16).padStart(2, '0')).join('');
     const hash = await digest(activeMatchId, round, user.uid, nonce, answer);
-    localStorage.setItem(savedAnswerKey(round), JSON.stringify({nonce, answer}));
-    await setDoc(doc(db, 'matches', activeMatchId, 'commits', roundKey(round, user.uid)), {
-      uid: user.uid, round, hash, createdAt: serverTimestamp()
-    });
+    const commitRef = doc(db, 'matches', activeMatchId, 'commits', roundKey(round, user.uid));
+    const commitData = {uid: user.uid, round, hash, createdAt: serverTimestamp()};
+    if (sealedProtocol()) {
+      // Atomic write: a committed answer always has a sealed answer, even if
+      // the other participant goes offline. Firestore rules forbid reading it
+      // until each player's tenth sealed response has been saved.
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'matches', activeMatchId, 'sealedAnswers', roundKey(round, user.uid)), {
+        uid: user.uid, round, answer, createdAt: serverTimestamp()
+      });
+      batch.set(commitRef, commitData);
+      await batch.commit();
+    } else {
+      localStorage.setItem(savedAnswerKey(round), JSON.stringify({nonce, answer}));
+      await setDoc(commitRef, commitData);
+    }
     await render();
   } catch (error) { showError(error); }
   finally { busy = false; }
@@ -254,7 +269,7 @@ async function tryReveal(round) {
   if (reveals[key] || revealing.has(key)) return;
   const pair = [roundKey(round, match.hostUid), roundKey(round, match.guestUid)];
   if (!pair.every(k => commits[k])) return;
-  if (independent() && !everyoneFinished()) return;
+  if (sealedProtocol() || (independent() && !everyoneFinished())) return;
   const stored = localStorage.getItem(savedAnswerKey(round));
   if (!stored) return;
   revealing.add(key);
@@ -293,6 +308,13 @@ async function scoreFor(round, uid) {
 }
 async function renderIndependent(id, gen) {
   const round=independentRound();
+  if (sealedProtocol() && everyoneFinished() && !sealedSubscribed) {
+    sealedSubscribed = true;
+    unsubscribes.push(onSnapshot(collection(db, 'matches', id, 'sealedAnswers'), snap => {
+      sealedAnswers = Object.fromEntries(snap.docs.map(d => [d.id, d.data()]));
+      render();
+    }, showError));
+  }
   if(!everyoneFinished()){
     if(round===ROUNDS) display(basePage('<div class="panel"><h2>🏁 Finished!</h2><p>Waiting for your opponent to finish all 10 questions.</p></div>'),'ind-wait:'+id);
     else {
@@ -302,15 +324,23 @@ async function renderIndependent(id, gen) {
     }
     return;
   }
-  for(let r=0;r<ROUNDS;r++) void tryReveal(r);
-  const ready=[match.hostUid,match.guestUid].every(uid=>Array.from({length:ROUNDS},(_,r)=>roundKey(r,uid)).every(k=>!!reveals[k]));
+  if (!sealedProtocol()) for(let r=0;r<ROUNDS;r++) void tryReveal(r);
+  const answers = sealedProtocol() ? sealedAnswers : reveals;
+  const ready=[match.hostUid,match.guestUid].every(uid=>Array.from({length:ROUNDS},(_,r)=>roundKey(r,uid)).every(k=>!!answers[k]));
   if(!ready) {
     display(basePage('<div class="panel"><h2>🔐 Both finished</h2><p>Verifying answers. Keep this page open.</p></div>'),'ind-revealing:'+id);
     return;
   }
   let scores=[0,0], rows=[];
   for(let r=0;r<ROUNDS;r++){
-    const [a,b]=await Promise.all([scoreFor(r,match.hostUid),scoreFor(r,match.guestUid)]);
+    const score = async (uid) => {
+      if (!sealedProtocol()) return scoreFor(r, uid);
+      const entry = sealedAnswers[roundKey(r, uid)];
+      if (!entry || entry.uid !== uid || entry.round !== r) return {points:0,answer:'',valid:false};
+      const assessed = env.evaluate(entry.answer, env.DB[match.questionIds[r]]);
+      return {points:assessed.ok?(assessed.partial?70:140):0,answer:entry.answer,valid:true};
+    };
+    const [a,b]=await Promise.all([score(match.hostUid),score(match.guestUid)]);
     if(gen!==renderGeneration)return;
     scores[0]+=a.points;scores[1]+=b.points;
     rows.push('<p><b>'+(r+1)+'. '+h(env.DB[match.questionIds[r]]?.name||'Question')+'</b><br>'+h(match.hostName)+': '+h(a.answer)+' ('+a.points+')<br>'+h(match.guestName)+': '+h(b.answer)+' ('+b.points+')</p>');
