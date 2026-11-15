@@ -1,3 +1,10 @@
+## Engineering follow-up — 15 November 2026 (invitation ownership)
+
+- Confirmed GitHub Actions game regression run 43771388381 **success** for expanded question-ID rules tests (commit 99898c44); Pages deployment 43771403236 **success** for fa2a8e69. CI browser tests and local Firestore emulator are not production Firebase or physical-device validation.
+- Reviewed the current workflow, game and mobile test suites, Firestore rules and existing handoff. Identified a missing explicit security regression: unauthenticated invitation creation and forged `hostUid` attempts were not exercised in the emulator suite, although rules require authenticated creator identity.
+- Added real emulator assertions rejecting anonymous and forged-host invitation creation and accepting a valid invitation created by the second authenticated user (commit ee7074c8). GitHub accepted the change. **New CI run result pending**; do not claim these assertions passed until the corresponding workflow completes.
+- Next: inspect the workflow for ee7074c8; investigate any failures. Verify production Firestore rules deployment and two-device asynchronous battles, then expand expiry/reconnect, forged reveal, mechanism accuracy, accessibility and cross-project coverage. Preserve player progress and never deploy Firebase rules without production compatibility checks.
+
 ## Follow-up engineering run — 15 November 2026
 
 - Inspected latest repository head 93db4dd, Firestore rules, emulator test and workflow. Prior regression run 43761002202 passed. Production Firebase and two real phones remain unverified.
