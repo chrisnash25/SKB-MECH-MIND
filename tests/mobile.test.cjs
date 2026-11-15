@@ -34,7 +34,7 @@ const assert = require('node:assert/strict');
         await page.getByRole('button',{name:/Battle Arena/}).first().tap();
         await check('arena');
         await page.getByRole('button',{name:/Start offline battle/}).tap();
-        assert.match(await page.locator('#app').innerText(),/ROUND 1\\/5/);
+        assert.ok((await page.locator('#app').innerText()).includes('ROUND 1/5'), 'Offline round did not start');
         await check('offline round');
         assert.deepEqual(errors,[],`Browser exceptions at ${width}px`);
         console.log(`PASS: mobile navigation and layout at ${width}px`);
