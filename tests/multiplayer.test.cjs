@@ -50,6 +50,17 @@ async function write(ref,data,patch=false){
   if(!response.ok)throw Error('Mock write failed');
 }
 export function setDoc(ref,data){return write(ref,data)}
+export function writeBatch(db){
+  const writes=[];
+  return {
+    set(ref,data){writes.push({path:ref.path,data});return this},
+    async commit(){
+      const response=await fetch('/mock/batch',{method:'POST',
+        headers:{'content-type':'application/json'},body:JSON.stringify({writes})});
+      if(!response.ok)throw Error('Mock batch failed');
+    }
+  };
+}
 export async function runTransaction(db, callback){
   let queued=[];
   let result=await callback({get:remote,update:(ref,data)=>queued.push([ref,data])});
@@ -94,15 +105,30 @@ const server = http.createServer((req,res)=>{
     return json(res,{exists:docs.has(key),data:docs.get(key)});
   }
   if(req.method==='GET'&&url.pathname==='/mock/collection'){
+    // Model the post-finish visibility invariant of Firestore rules.
+    if(key?.endsWith('/sealedAnswers')){
+      const matchId=key.split('/')[1],m=docs.get('matches/'+matchId);
+      if(!m||!m.guestUid||
+         !docs.has(key+'/9_'+m.hostUid)||
+         !docs.has(key+'/9_'+m.guestUid)){
+        res.writeHead(403,{'content-type':'text/plain'});return res.end('Answers locked');
+      }
+    }
     return json(res,{docs:[...docs.entries()].filter(([p])=>
       p.startsWith(key+'/')&&!p.slice(key.length+1).includes('/')).map(([p,data])=>({id:p.split('/').at(-1),data}))});
   }
-  if(req.method==='POST'&&url.pathname==='/mock/write'){
+  if(req.method==='POST'&&(url.pathname==='/mock/write'||url.pathname==='/mock/batch')){
     let chunks=[];
     req.on('data',c=>chunks.push(c));
     req.on('end',()=>{
-      const {path:p,data,patch}=JSON.parse(Buffer.concat(chunks).toString('utf8'));
-      docs.set(p,patch?{...docs.get(p),...data}:data);
+      const request=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      if(url.pathname==='/mock/batch'){
+        // Apply both writes atomically for the simulated Firestore batch.
+        for(const {path:p,data} of request.writes)docs.set(p,data);
+      }else{
+        const {path:p,data,patch}=request;
+        docs.set(p,patch?{...docs.get(p),...data}:data);
+      }
       json(res,{ok:true});
     });
     return;
@@ -164,6 +190,71 @@ const server = http.createServer((req,res)=>{
     assert.match(await guest.locator('#app').innerText(),/1400/);
     assert.deepEqual(errors,[]);
     console.log('PASS: simulated two-browser join link, ten rounds, hidden answers, scoring and final winner.');
+
+    // Independent Battle: host can finish and close the browser before the
+    // guest submits even their first response. Results cannot leak early.
+    const host2Context=await browser.newContext();
+    const guest2Context=await browser.newContext();
+    const host2=await host2Context.newPage();
+    const guest2=await guest2Context.newPage();
+    for(const p of [host2,guest2]){
+      p.on('pageerror',e=>errors.push(e.message));
+      await p.route('https://www.gstatic.com/firebasejs/**',route=>{
+        const name=new URL(route.request().url()).pathname.split('/').at(-1);
+        const body=mockModules[name];
+        return route.fulfill({status:body?200:404,contentType:'application/javascript',
+          headers:{'access-control-allow-origin':'*'},body:body||'not found'});
+      });
+    }
+    await host2.goto(base+'/');
+    await host2.waitForFunction(()=>Boolean(window.MechOnline));
+    await host2.getByRole('button',{name:/Battle Arena/}).click();
+    await host2.getByRole('button',{name:/Online invitation setup/}).click();
+    await host2.locator('#battleMode').selectOption('independent');
+    await host2.getByRole('button',{name:/Create invitation link/}).click();
+    await host2.locator('#inviteLink').waitFor({timeout:12000});
+    const invite2=await host2.locator('#inviteLink').inputValue();
+    const matchId2=new URL(invite2).searchParams.get('battle');
+    const seeded=docs.get('matches/'+matchId2);
+    assert.equal(seeded.mode,'independent');
+    assert.equal(seeded.protocol,'sealed-v1');
+    await guest2.goto(invite2);
+    await guest2.getByRole('button',{name:/Join this battle/}).click();
+    await host2.locator('#battleAnswer').waitFor({timeout:12000});
+    await guest2.locator('#battleAnswer').waitFor({timeout:12000});
+
+    for(let round=0;round<10;round++){
+      await host2.locator('#battleAnswer').waitFor({timeout:12000});
+      const answer=await host2.evaluate(idx=>DB[idx].name,seeded.questionIds[round]);
+      await host2.locator('#battleAnswer').fill(answer);
+      await host2.getByRole('button',{name:/Lock answer and continue/}).click();
+      if(round<9) await host2.waitForFunction(
+        r=>document.querySelector('#app')?.textContent.includes('INDEPENDENT · '+(r+2)+'/10'),
+        round,{timeout:12000});
+      else await host2.getByText(/Waiting for your opponent to finish/).waitFor({timeout:12000});
+    }
+    const locked=await guest2.evaluate(async id=>
+      (await fetch('/mock/collection?path='+encodeURIComponent('matches/'+id+'/sealedAnswers'))).status,
+      matchId2);
+    assert.equal(locked,403,'Independent answers were readable before both players finished');
+    assert.equal([...docs.keys()].filter(k=>k.startsWith('matches/'+matchId2+'/sealedAnswers/')).length,10);
+    await host2.close(); // Host is now offline and cannot reveal anything.
+
+    for(let round=0;round<10;round++){
+      await guest2.locator('#battleAnswer').waitFor({timeout:12000});
+      await guest2.locator('#battleAnswer').fill('banana spaceship nonsense');
+      await guest2.getByRole('button',{name:/Lock answer and continue/}).click();
+      if(round<9) await guest2.waitForFunction(
+        r=>document.querySelector('#app')?.textContent.includes('INDEPENDENT · '+(r+2)+'/10'),
+        round,{timeout:12000});
+    }
+    await guest2.getByRole('heading',{name:/wins!/}).waitFor({timeout:12000});
+    assert.match(await guest2.locator('#app').innerText(),/1400/);
+    assert.equal([...docs.keys()].filter(k=>k.startsWith('matches/'+matchId2+'/sealedAnswers/')).length,20);
+    assert.deepEqual(errors,[]);
+    await guest2Context.close();
+    await host2Context.close();
+    console.log('PASS: Independent Battle 10+10 answers, no early answer reads, host disconnected, guest receives results.');
   } finally {
     await browser.close();
     server.close();
