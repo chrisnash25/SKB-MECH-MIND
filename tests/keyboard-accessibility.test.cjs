@@ -73,6 +73,37 @@ const assert = require('node:assert/strict');
     await page.keyboard.press('Enter');
     assert.ok((await page.locator('#app').innerText()).includes('Answer locked'),
       'Keyboard Enter did not submit the offline battle answer');
+    // Complete the second player's turn and reveal using only Tab and Enter.
+    // This guards against a keyboard trap after the first answer is locked.
+    async function tabTo(control,description){
+      for(let i=0;i<40;i++){
+        await page.keyboard.press('Tab');
+        if(await control.evaluate(el=>document.activeElement===el)) return;
+      }
+      assert.fail(description+' unreachable through keyboard Tab');
+    }
+    await tabTo(page.getByRole('button',{name:'Next player'}),'Next player');
+    await page.keyboard.press('Enter');
+    assert.ok((await page.locator('#app').innerText()).includes('ROUND 1/5'),
+      'Next player did not open the second turn');
+    const secondAnswer=page.locator('#battleAnswer');
+    await tabTo(secondAnswer,'Player 2 answer');
+    await page.keyboard.type(expectedAnswer);
+    assert.equal(await secondAnswer.inputValue(),expectedAnswer,'Player 2 keyboard answer mismatch');
+    await tabTo(page.getByRole('button',{name:'Lock answer'}),'Player 2 Lock answer');
+    await page.keyboard.press('Enter');
+    assert.ok((await page.locator('#app').innerText()).includes('Both players have finished this round.'),
+      'Player 2 answer was not locked');
+    await tabTo(page.getByRole('button',{name:'See round result'}),'See round result');
+    await page.keyboard.press('Enter');
+    const reveal=await page.locator('#app').innerText();
+    assert.ok(reveal.includes('Round 1 reveal'),'Keyboard reveal did not open');
+    assert.ok(reveal.includes('Player 1:')&&reveal.includes('Player 2:'),
+      'Round reveal does not show both scores');
+    await tabTo(page.getByRole('button',{name:'Next round'}),'Next round');
+    await page.keyboard.press('Enter');
+    assert.ok((await page.locator('#app').innerText()).includes('ROUND 2/5'),
+      'Keyboard Next round did not advance the battle');
     assert.deepEqual(errors,[],'Browser exceptions: '+errors.join('; '));
     console.log('PASS: keyboard focus and Enter activate Battle Arena and offline play');
     await page.close();
