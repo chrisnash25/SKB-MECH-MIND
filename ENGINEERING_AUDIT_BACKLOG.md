@@ -1,3 +1,10 @@
+## Engineering follow-up — 16 November 2026 (failed CI and Mechanism Lab rotation)
+
+- Inspected GitHub Actions run [43782487846](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43782487846): **failure** at `node tests/lab-rotation.test.cjs`, assertion `Repeated Ratchet and pawl before finishing all four mechanisms` at line 23. Browser and mobile tests preceding it passed; persistence, multiplayer and Firestore emulator steps were skipped due to fail-fast. Therefore invitation expiry tests from commit `020dc879` remain **unverified**, not failed.
+- Root cause from actual `index.html` source: manually choosing a mechanism with an empty rotation queue left the queue empty; first Next experiment then created a new four-machine queue including the manually selected machine. This could repeat the machine before all four had appeared, depending on random order.
+- Fix committed as [d4a2aea1](https://github.com/chrisnash25/SKB-MECH-MIND/commit/d4a2aea1b6efd0d254cdf500b7c1f5082cb04a9d): when a manual selection occurs with no active queue, initialise and shuffle the three *other* mechanisms. Existing queue filtering remains for manual changes mid-cycle. This preserves immediate non-repetition and completes the four-machine cycle before repeating.
+- Evidence: inspected failing CI logs and exact source; GitHub accepted production code fix. **The new CI outcome and physical-device gameplay remain unverified**. Next inspect new regression run; if green, record coverage for browser/mobile/lab/persistence/two-context multiplayer/local Firebase emulator. Continue with expired-invitation joins and production Firebase release gate. No production rules or player progress changed.
+
 ## Engineering follow-up — 16 November 2026 (invitation expiry boundaries)
 
 - Verified prior head `9dcd51f7`: GitHub Actions game regression run `43777097591` succeeded, including Mechanism Lab rotation coverage; Pages deployment `43777097005` succeeded. This is CI evidence, not deployed physical-device or production Firebase evidence.
