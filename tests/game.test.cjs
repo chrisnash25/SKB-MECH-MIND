@@ -48,6 +48,23 @@ const assert = require('node:assert/strict');
     await page.getByRole('button', { name: /Battle Arena/ }).first().click();
     await page.getByRole('button', { name: /Start offline battle/ }).click();
     assert.match(await page.locator('#app').innerText(), /ROUND 1\/5/);
+    // Exercise actual UI correction controls and ensure score deltas are reversible.
+    const correctName=await page.evaluate(()=>game.pool[0].name);
+    await page.locator('#battleAnswer').fill(correctName);
+    await page.getByRole('button',{name:'Lock answer'}).click();
+    await page.getByRole('button',{name:'Next player'}).click();
+    await page.locator('#battleAnswer').fill('banana spaceship nonsense');
+    await page.getByRole('button',{name:'Lock answer'}).click();
+    await page.getByRole('button',{name:'See round result'}).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[140,0],'Initial battle scores incorrect');
+    await page.getByRole('button',{name:'Change to correct'}).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[140,140],'Manual acceptance did not credit Player 2');
+    await page.getByRole('button',{name:'Change to incorrect'}).nth(1).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[140,0],'Manual reversal double-counted Player 2');
+    await page.getByRole('button',{name:'Change to incorrect'}).first().click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[0,0],'Manual rejection did not debit Player 1');
+    await page.getByRole('button',{name:'Next round'}).click();
+    assert.match(await page.locator('#app').innerText(), /ROUND 2\/5/);
     assert.equal(errors.length, 0, 'Browser JS errors: '+errors.join('; '));
     console.log('PASS: 67 technical answers, 67 nonsense answers, 66 concept examples, partial credit, contradiction, invitation safety, offline navigation, browser JS.');
   } finally { await browser.close(); }
