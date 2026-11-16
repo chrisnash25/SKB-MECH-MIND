@@ -53,6 +53,10 @@ const assert = require('node:assert/strict');
     // Verify actual keyboard-only answer entry and submission, not just navigation.
     // A user must be able to Tab into the answer field, type, Tab to Lock answer,
     // and submit using Enter without mouse or programmatic focus.
+    // Accessible name must be explicit and identify the active player;
+    // placeholder text alone is not a reliable screen-reader label.
+    assert.equal(await page.getByRole('textbox',{name:'Engineering subject answer for Player 1'}).count(),1,
+      'Player 1 battle answer lacks an accessible label');
     const answer = page.locator('#battleAnswer');
     let answerReached=false;
     for(let i=0;i<40;i++){
@@ -86,6 +90,8 @@ const assert = require('node:assert/strict');
     await page.keyboard.press('Enter');
     assert.ok((await page.locator('#app').innerText()).includes('ROUND 1/5'),
       'Next player did not open the second turn');
+    assert.equal(await page.getByRole('textbox',{name:'Engineering subject answer for Player 2'}).count(),1,
+      'Player 2 battle answer lacks an accessible label');
     const secondAnswer=page.locator('#battleAnswer');
     await tabTo(secondAnswer,'Player 2 answer');
     await page.keyboard.type(expectedAnswer);
