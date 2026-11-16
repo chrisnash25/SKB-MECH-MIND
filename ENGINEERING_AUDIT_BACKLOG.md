@@ -1,3 +1,11 @@
+## Engineering follow-up — 16 November 2026, 06:40 UTC (visible keyboard focus)
+
+- Verified [Game regression 43812435871](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43812435871) completed **successfully** and [Pages deployment 43812447789](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43812447789) completed **successfully**. These establish CI and deployment outcomes, not physical-device accessibility or production Firebase verification.
+- Inspected the real browser keyboard smoke test, CI steps, product CSS and previous audit. Found a test blind spot: the Battle Arena button could be keyboard-reachable while its focus indicator was invisible, yet the existing test would still pass. Reproduction: remove `button:focus-visible` outline; previous test only checked `document.activeElement` and Enter activation. Expected: a clearly visible focus indicator.
+- Added computed-style assertion that keyboard-focused Battle Arena has an outline at least 2px wide and a non-`none` outline style, commit [82c4182b](https://github.com/chrisnash25/SKB-MECH-MIND/commit/82c4182be241c8739a874effb68a415ce150de50). **Pending new CI result**; no production UI code or player data changed.
+- Next: verify new CI and fix any failure. Expand focus tests to actual contrast and other screens, Tab to offline-start without `.focus()`, screen-reader labels and dynamic focus restoration; then revisit expired invitation joins, multiplayer reconnection and independent production Firebase/device release gates.
+- Cross-project inventory: SKB-MULTITOOL-PRO's four latest returned Audio Recorder workflow runs all succeeded; device hardware behaviour not established.
+
 ## Engineering follow-up — 16 November 2026, 05:46 UTC (keyboard reachability)
 
 - Verified previous keyboard smoke regression [43806375981](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43806375981) completed successfully; Pages deployment [43806389844](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43806389844) succeeded. These are CI/deployment outcomes, not evidence of a real phone or production Firebase test.
