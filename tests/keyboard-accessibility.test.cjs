@@ -119,6 +119,9 @@ const assert = require('node:assert/strict');
       const correct=await page.evaluate(()=>game.pool[game.round].name);
       for(let player=0;player<2;player++){
         const field=page.locator('#battleAnswer');
+        // Re-rendered turns must retain the correct player-specific accessible name.
+        assert.equal(await page.getByRole('textbox',{name:'Engineering subject answer for Player '+(player+1)}).count(),1,
+          'Round '+round+' player '+(player+1)+' answer label missing or stale');
         await tabTo(field,'Round '+round+' player '+(player+1)+' answer');
         await page.keyboard.type(correct);
         assert.equal(await field.inputValue(),correct);
