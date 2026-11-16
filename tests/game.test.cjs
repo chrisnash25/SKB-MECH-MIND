@@ -34,6 +34,12 @@ const assert = require('node:assert/strict');
     assert.equal(results.harmonicWrong.ok, false, 'Unrelated harmonic-drive answer accepted');
     assert.equal(results.concepts.length, 66, 'Expected 66 subject-specific concept rules');
     for (const item of results.concepts) assert.equal(item.result.ok, true, 'Concept example rejected: '+item.name+' — '+item.sample);
+    // Regression: Mystery Vault answer must have an explicit accessible name.
+    // Test the rendered page, not only a source-string assertion.
+    await page.getByRole('button', { name: /Mystery Vault/ }).click();
+    assert.equal(await page.getByRole('textbox', { name: 'Engineering subject answer' }).count(), 1,
+      'Mystery Vault answer lacks its expected accessible name');
+    await page.getByRole('button', { name: /Workshop/ }).click();
     await page.getByRole('button', { name: /Battle Arena/ }).click();
     await page.getByRole('button', { name: /Online invitation setup/ }).click();
     assert.equal(await page.locator('#onlineName').inputValue(), 'Chris');
