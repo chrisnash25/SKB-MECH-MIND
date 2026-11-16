@@ -55,6 +55,17 @@ async function main() {
     }
     await assertSucceeds(setDoc(doc(hostDb,'matches','C'.repeat(24)),newMatch([0,1,2,3,4,5,6,7,8,66])));
 
+    // Expiry boundaries: hosts cannot create already-expired invitations or
+    // invitations beyond the eight-day server-enforced maximum.
+    await assertFails(setDoc(doc(hostDb,'matches','D'.repeat(24)),{
+      ...newMatch([0,1,2,3,4,5,6,7,8,9]),
+      expiresAt:Timestamp.fromMillis(Date.now()-60000)
+    }));
+    await assertFails(setDoc(doc(hostDb,'matches','E'.repeat(24)),{
+      ...newMatch([0,1,2,3,4,5,6,7,8,9]),
+      expiresAt:Timestamp.fromMillis(Date.now()+9*86400000)
+    }));
+
     // An invitation cannot be created anonymously or on behalf of another user.
     // This is a real emulator rules check, not a mocked client-side validation.
     await assertFails(setDoc(doc(anonymousDb,'matches','D'.repeat(24)),
