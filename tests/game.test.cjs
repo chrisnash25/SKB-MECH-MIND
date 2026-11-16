@@ -93,6 +93,32 @@ const assert = require('node:assert/strict');
     await page.getByRole('button',{name:'Next round'}).click();
     assert.deepEqual(await page.evaluate(()=>game.scores),[90,140],
       'Hint-adjusted corrections must persist across round transition');
+    // Subject-specific partial credit: verify real browser scoring and reversibility.
+    // Fix the selected round subject to avoid dependence on shuffled puzzle order.
+    await page.evaluate(() => {
+      startBattle();
+      game.pool[0] = DB.find(q => q.name === 'Ratchet and pawl');
+      battle();
+    });
+    await page.locator('#battleAnswer').fill('gear and latch');
+    await page.getByRole('button',{name:'Lock answer'}).click();
+    assert.deepEqual(await page.evaluate(()=>({partial:game.locked[0].partial,pts:game.locked[0].pts})),
+      {partial:true,pts:70},'Recognised informal mechanism answer must receive partial credit');
+    await page.getByRole('button',{name:'Next player'}).click();
+    await page.locator('#battleAnswer').fill('banana spaceship nonsense');
+    await page.getByRole('button',{name:'Lock answer'}).click();
+    await page.getByRole('button',{name:'See round result'}).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[70,0],
+      'Partial credit must not award full points');
+    await page.getByRole('button',{name:'Change to incorrect'}).first().click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[0,0],
+      'Rejecting partial credit must debit only 70 points');
+    await page.getByRole('button',{name:'Change to correct'}).first().click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[70,0],
+      'Reinstating partial credit must restore exactly 70 points');
+    await page.getByRole('button',{name:'Next round'}).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[70,0],
+      'Partial-credit correction must persist into next round');
     assert.equal(errors.length, 0, 'Browser JS errors: '+errors.join('; '));
     console.log('PASS: 67 technical answers, 67 nonsense answers, 66 concept examples, partial credit, contradiction, invitation safety, offline navigation, browser JS.');
   } finally { await browser.close(); }
