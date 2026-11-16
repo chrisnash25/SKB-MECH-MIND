@@ -1,3 +1,10 @@
+## Engineering follow-up — 16 November 2026 (invitation expiry boundaries)
+
+- Verified prior head `9dcd51f7`: GitHub Actions game regression run `43777097591` succeeded, including Mechanism Lab rotation coverage; Pages deployment `43777097005` succeeded. This is CI evidence, not deployed physical-device or production Firebase evidence.
+- Inspected repo commits, workflow, mobile and catalogue browser tests, Firestore rules and emulator test suite. Found an untested expiry boundary: creation rules require `expiresAt > request.time` and `expiresAt <= request.time + 8 days`, but emulator tests did not assert both rejections.
+- Added emulator negative tests for already-expired invitations and invitations nine days in the future in commit `020dc879`. Existing production rules unchanged. New GitHub Actions regression run `43782487846` was in progress when checked; **do not mark new tests passed until completed**.
+- Next: inspect run `43782487846`, repair any failures, then test expired invitation joins, reconnect after completion, malicious reveal behaviour and production rules compatibility. Real two-device production Firebase validation remains a release blocker. Full deployed gameplay, accessibility, mechanism correctness and other project audits remain incomplete.
+
 ## Engineering follow-up — 15 November 2026 (invitation ownership)
 
 - Confirmed GitHub Actions game regression run 43771388381 **success** for expanded question-ID rules tests (commit 99898c44); Pages deployment 43771403236 **success** for fa2a8e69. CI browser tests and local Firestore emulator are not production Firebase or physical-device validation.
