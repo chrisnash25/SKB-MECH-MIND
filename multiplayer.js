@@ -51,6 +51,9 @@ function errorText(error) {
   return (error?.message || 'Something went wrong. Please try again.').slice(0, 280);
 }
 function showError(error) {
+  // A failed Firestore listener is terminal. Detach the remaining listeners so
+  // stale snapshots cannot overwrite the error view or leak subscriptions.
+  clearListeners();
   busy = false;
   display('<button class="alt" onclick="MechOnline.leave()">← Battle Arena</button><div class="panel"><h2>⚠️ Online battle setup</h2><p>' + h(errorText(error)) + '</p><button onclick="MechOnline.openAgain()">Retry</button><p class="muted small">Your offline Battle Arena still works normally.</p></div>');
 }
