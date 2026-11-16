@@ -1,3 +1,10 @@
+## Engineering follow-up — 16 November 2026, 10:55 UTC (keyboard two-player flow)
+
+- **Verified prior baseline:** [Regression 43843320422](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43843320422) succeeded for commit 58f72cbb; [Pages deployment 43843338933](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43843338933) succeeded for a64652f6. No physical-device or production Firebase verification implied.
+- **Reproduction/coverage gap:** Keyboard smoke test ended after Player 1 locked an answer. Removing keyboard reachability from Next player, Player 2 answer/Lock answer, See round result, or Next round would not fail the previous suite. Expected: two complete keyboard-only turns, visible round scores, and advancement to round 2.
+- **Change:** [88fffd14](https://github.com/chrisnash25/SKB-MECH-MIND/commit/88fffd145685d5644f8c3855ac346a46eda1a757) adds real Tab/Enter traversal and assertions across that flow in Chromium. **CI result pending**; no production game code, saved progress, or Firebase rules changed.
+- **Next:** Inspect new CI job logs, repair failures, then test all five rounds and score corrections, screen-reader dynamic focus/announcements, real-device and production Firebase multiplayer. Existing static and emulator checks do not establish real two-phone gameplay.
+
 ## Engineering follow-up — 16 November 2026, 09:49 UTC (keyboard answer submission)
 
 - **Verified baseline:** [Regression 43827547769](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43827547769) completed successfully; [Pages deployment 43827571842](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43827571842) completed successfully. This proves CI and deployment status only, not physical Android, screen-reader or production Firebase operation.
