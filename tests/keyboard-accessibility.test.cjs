@@ -25,6 +25,14 @@ const assert = require('node:assert/strict');
       }
     }
     assert.ok(battleReached,'Battle Arena is not reachable through keyboard Tab navigation');
+    // Keyboard focus must be visibly identifiable, not merely reachable.
+    // The game defines a 3px focus-visible outline for buttons.
+    const focusAppearance=await battle.evaluate(el=>{
+      const style=getComputedStyle(el);
+      return {width:parseFloat(style.outlineWidth),style:style.outlineStyle,color:style.outlineColor};
+    });
+    assert.ok(focusAppearance.width>=2 && focusAppearance.style!=='none',
+      'Battle Arena lacks a visible keyboard focus outline: '+JSON.stringify(focusAppearance));
     await page.keyboard.press('Enter');
     assert.ok(await page.getByRole('button',{name:/Start offline battle/}).count(),'Keyboard Enter did not open Battle Arena');
     const start = page.getByRole('button',{name:/Start offline battle/});
