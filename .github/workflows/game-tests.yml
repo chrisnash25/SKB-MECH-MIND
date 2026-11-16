@@ -43,6 +43,8 @@ jobs:
         run: node tests/game.test.cjs
       - name: Test mobile touch navigation and responsive layouts
         run: node tests/mobile.test.cjs
+      - name: Test keyboard-only navigation and activation
+        run: node tests/keyboard-accessibility.test.cjs
       - name: Test Mechanism Lab Next experiment rotation
         run: node tests/lab-rotation.test.cjs
       - name: Test saved progress and corrupted storage recovery
