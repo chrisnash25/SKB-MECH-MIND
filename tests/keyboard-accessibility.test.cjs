@@ -104,8 +104,39 @@ const assert = require('node:assert/strict');
     await page.keyboard.press('Enter');
     assert.ok((await page.locator('#app').innerText()).includes('ROUND 2/5'),
       'Keyboard Next round did not advance the battle');
+    // Exercise the remaining four rounds entirely through real keyboard input.
+    // A five-round completion catches focus traps and final-result regressions
+    // that a one-round smoke test cannot detect.
+    for(let round=2;round<=5;round++){
+      assert.ok((await page.locator('#app').innerText()).includes('ROUND '+round+'/5'),
+        'Round '+round+' did not load');
+      const correct=await page.evaluate(()=>game.pool[game.round].name);
+      for(let player=0;player<2;player++){
+        const field=page.locator('#battleAnswer');
+        await tabTo(field,'Round '+round+' player '+(player+1)+' answer');
+        await page.keyboard.type(correct);
+        assert.equal(await field.inputValue(),correct);
+        await tabTo(page.getByRole('button',{name:'Lock answer'}),'Round '+round+' Lock answer');
+        await page.keyboard.press('Enter');
+        if(player===0){
+          await tabTo(page.getByRole('button',{name:'Next player'}),'Round '+round+' Next player');
+          await page.keyboard.press('Enter');
+        }
+      }
+      await tabTo(page.getByRole('button',{name:'See round result'}),'Round '+round+' reveal');
+      await page.keyboard.press('Enter');
+      assert.ok((await page.locator('#app').innerText()).includes('Round '+round+' reveal'),
+        'Round '+round+' result missing');
+      await tabTo(page.getByRole('button',{name:round===5?'Final result':'Next round'}),
+        'Round '+round+' advance');
+      await page.keyboard.press('Enter');
+    }
+    assert.ok((await page.locator('#app').innerText()).includes('Battle drawn'),
+      'Equal correct answers should produce a drawn final result');
+    assert.equal(await page.evaluate(()=>game.round),5,'Final battle round not recorded');
+    assert.equal(await page.evaluate(()=>game.locked.length),10,'Not all ten answers were recorded');
     assert.deepEqual(errors,[],'Browser exceptions: '+errors.join('; '));
-    console.log('PASS: keyboard focus and Enter activate Battle Arena and offline play');
+    console.log('PASS: keyboard-only five-round offline battle, ten answers, scores and final result');
     await page.close();
   } finally {await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
