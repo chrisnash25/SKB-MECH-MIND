@@ -51,6 +51,23 @@ const assert = require('node:assert/strict');
       assert.equal(manualCycle[0],selected,'Manual selection did not load '+selected);
       assert.equal(new Set(manualCycle).size,4,'Not all four mechanisms visited from '+selected);
     }
+    // Regression: switching manually halfway through a rotation must reset the
+    // remaining queue, including when selecting a machine already seen.
+    await page.getByRole('button',{name:/Change machine/}).tap();
+    await page.getByRole('button',{name:/Ratchet and pawl/}).tap();
+    await page.getByRole('button',{name:/Reveal & learn/}).tap();
+    await page.getByRole('button',{name:/Next experiment/}).tap();
+    const firstRandom=await page.evaluate(()=>game?.q?.name);
+    await page.getByRole('button',{name:/Change machine/}).tap();
+    await page.getByRole('button',{name:firstRandom,exact:false}).tap();
+    const restarted=[await page.evaluate(()=>game?.q?.name)];
+    for(let round=0;round<3;round++){
+      await page.getByRole('button',{name:/Reveal & learn/}).tap();
+      await page.getByRole('button',{name:/Next experiment/}).tap();
+      restarted.push(await page.evaluate(()=>game?.q?.name));
+    }
+    assert.equal(new Set(restarted).size,4,
+      'Manual reselection mid-cycle failed to reset all four machines');
     assert.deepEqual(errors,[],'Browser JavaScript errors: '+errors.join('; '));
     console.log('PASS: Mechanism Lab next button rotates all four machines across three full cycles, including manual selection and mobile taps.');
   } finally {
