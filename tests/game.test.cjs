@@ -67,6 +67,32 @@ const assert = require('node:assert/strict');
     assert.match(await page.locator('#app').innerText(), /ROUND 2\/5/);
     assert.deepEqual(await page.evaluate(()=>game.scores),[0,0],
       'Corrected scores changed unexpectedly when advancing to round 2');
+    // A fresh battle exercises hint penalties and manual corrections without
+    // depending on the random engineering subject selected for round one.
+    await page.evaluate(()=>startBattle());
+    const hintedName=await page.evaluate(()=>game.pool[0].name);
+    await page.getByRole('button',{name:'Hint',exact:true}).click();
+    await page.getByRole('button',{name:'Hint',exact:true}).click();
+    await page.getByRole('button',{name:'Hint',exact:true}).click();
+    await page.locator('#battleAnswer').fill(hintedName);
+    await page.getByRole('button',{name:'Lock answer'}).click();
+    assert.deepEqual(await page.evaluate(()=>({hints:game.locked[0].hints,pts:game.locked[0].pts})),
+      {hints:2,pts:90},'Hint penalty must be capped at two hints');
+    await page.getByRole('button',{name:'Next player'}).click();
+    await page.locator('#battleAnswer').fill(hintedName);
+    await page.getByRole('button',{name:'Lock answer'}).click();
+    await page.getByRole('button',{name:'See round result'}).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[90,140],
+      'Player 2 must not inherit Player 1 hint penalty');
+    await page.getByRole('button',{name:'Change to incorrect'}).first().click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[0,140],
+      'Manual correction must remove the discounted score, not full points');
+    await page.getByRole('button',{name:'Change to correct'}).first().click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[90,140],
+      'Reversing manual correction must restore discounted points');
+    await page.getByRole('button',{name:'Next round'}).click();
+    assert.deepEqual(await page.evaluate(()=>game.scores),[90,140],
+      'Hint-adjusted corrections must persist across round transition');
     assert.equal(errors.length, 0, 'Browser JS errors: '+errors.join('; '));
     console.log('PASS: 67 technical answers, 67 nonsense answers, 66 concept examples, partial credit, contradiction, invitation safety, offline navigation, browser JS.');
   } finally { await browser.close(); }
