@@ -36,7 +36,18 @@ const assert = require('node:assert/strict');
     await page.keyboard.press('Enter');
     assert.ok(await page.getByRole('button',{name:/Start offline battle/}).count(),'Keyboard Enter did not open Battle Arena');
     const start = page.getByRole('button',{name:/Start offline battle/});
-    await start.focus();
+    // Do not programmatically focus Start: that would mask a broken tab order.
+    // After the Battle Arena view replaces the home view, a keyboard-only
+    // player must still be able to reach the offline start action.
+    let startReached=false;
+    for(let i=0;i<40;i++){
+      await page.keyboard.press('Tab');
+      if(await start.evaluate(el=>document.activeElement===el)){
+        startReached=true;
+        break;
+      }
+    }
+    assert.ok(startReached,'Start offline battle is not reachable by Tab after opening Battle Arena');
     await page.keyboard.press('Enter');
     assert.ok((await page.locator('#app').innerText()).includes('ROUND 1/5'),'Keyboard Enter did not start offline battle');
     assert.deepEqual(errors,[],'Browser exceptions: '+errors.join('; '));
