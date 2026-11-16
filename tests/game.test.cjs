@@ -65,6 +65,8 @@ const assert = require('node:assert/strict');
     assert.deepEqual(await page.evaluate(()=>game.scores),[0,0],'Manual rejection did not debit Player 1');
     await page.getByRole('button',{name:'Next round'}).click();
     assert.match(await page.locator('#app').innerText(), /ROUND 2\/5/);
+    assert.deepEqual(await page.evaluate(()=>game.scores),[0,0],
+      'Corrected scores changed unexpectedly when advancing to round 2');
     assert.equal(errors.length, 0, 'Browser JS errors: '+errors.join('; '));
     console.log('PASS: 67 technical answers, 67 nonsense answers, 66 concept examples, partial credit, contradiction, invitation safety, offline navigation, browser JS.');
   } finally { await browser.close(); }
