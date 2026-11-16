@@ -14,8 +14,17 @@ const assert = require('node:assert/strict');
     await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);
     const battle = page.getByRole('button',{name:/Battle Arena/}).first();
     assert.ok(await battle.count(),'Battle Arena control missing');
-    await battle.focus();
-    assert.equal(await battle.evaluate(el=>document.activeElement===el),true,'Battle Arena button cannot receive keyboard focus');
+    // Traverse actual keyboard tab order: programmatic .focus() alone can
+    // pass even when a control is unreachable by keyboard-only players.
+    let battleReached=false;
+    for(let i=0;i<40;i++){
+      await page.keyboard.press('Tab');
+      if(await battle.evaluate(el=>document.activeElement===el)){
+        battleReached=true;
+        break;
+      }
+    }
+    assert.ok(battleReached,'Battle Arena is not reachable through keyboard Tab navigation');
     await page.keyboard.press('Enter');
     assert.ok(await page.getByRole('button',{name:/Start offline battle/}).count(),'Keyboard Enter did not open Battle Arena');
     const start = page.getByRole('button',{name:/Start offline battle/});
