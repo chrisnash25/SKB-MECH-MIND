@@ -244,6 +244,15 @@ const server = http.createServer((req,res)=>{
       await guest2.locator('#battleAnswer').waitFor({timeout:12000});
       await guest2.locator('#battleAnswer').fill('banana spaceship nonsense');
       await guest2.getByRole('button',{name:/Lock answer and continue/}).click();
+      // The host's ten completed answers must stay sealed even while the guest
+      // is progressing through rounds 1–9. The previous test only checked
+      // the boundary before the guest submitted any answer.
+      if(round<9){
+        const prematureRead=await guest2.evaluate(async id=>
+          (await fetch('/mock/collection?path='+encodeURIComponent('matches/'+id+'/sealedAnswers'))).status,
+          matchId2);
+        assert.equal(prematureRead,403,'Independent answers leaked after guest round '+(round+1));
+      }
       if(round<9) await guest2.waitForFunction(
         r=>document.querySelector('#app')?.textContent.includes('INDEPENDENT · '+(r+2)+'/10'),
         round,{timeout:12000});
