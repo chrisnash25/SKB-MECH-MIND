@@ -67,8 +67,12 @@ export async function runTransaction(db, callback){
   for(const [ref,data] of queued)await write(ref,data,true);
   return result;
 }
+const activeListeners=new Set();
+window.__failMockListeners=()=>{for(const fail of [...activeListeners])fail()};
 export function onSnapshot(ref,callback,onError){
   let stopped=false,previous='';
+  const fail=()=>{if(!stopped&&onError)onError(Object.assign(new Error('Simulated listener failure'),{code:'unavailable'}))};
+  activeListeners.add(fail);
   async function poll(){
     try {
       let response=await fetch('/mock/'+(ref.type==='doc'?'doc':'collection')+'?path='+encodeURIComponent(ref.path));
@@ -83,7 +87,7 @@ export function onSnapshot(ref,callback,onError){
   }
   poll();
   const interval=setInterval(poll,90);
-  return ()=>{stopped=true;clearInterval(interval)};
+  return ()=>{stopped=true;activeListeners.delete(fail);clearInterval(interval)};
 }`;
 const mockModules = {
   'firebase-app.js':appMock,
@@ -165,6 +169,16 @@ const server = http.createServer((req,res)=>{
     await guest.goto(invite);
     await guest.getByRole('button',{name:/Join this battle/}).click();
     await host.locator('#battleAnswer').waitFor({timeout:12000});
+    await guest.locator('#battleAnswer').waitFor({timeout:12000});
+    // Simulate a terminal Firestore listener failure during an active match.
+    // The error screen must remain visible, and Retry must reattach listeners
+    // without losing the invitation or existing round state.
+    await guest.evaluate(()=>window.__failMockListeners());
+    await guest.getByText(/database is unavailable/i).waitFor({timeout:12000});
+    await guest.waitForTimeout(300);
+    assert.match(await guest.locator('#app').innerText(),/database is unavailable/i,
+      'A stale snapshot replaced the listener error screen');
+    await guest.getByRole('button',{name:'Retry'}).click();
     await guest.locator('#battleAnswer').waitFor({timeout:12000});
     const mid=new URL(invite).searchParams.get('battle');
     const questionIds=docs.get('matches/'+mid).questionIds;
