@@ -1,3 +1,10 @@
+## Engineering follow-up — 16 November 2026, 05:46 UTC (keyboard reachability)
+
+- Verified previous keyboard smoke regression [43806375981](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43806375981) completed successfully; Pages deployment [43806389844](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43806389844) succeeded. These are CI/deployment outcomes, not evidence of a real phone or production Firebase test.
+- Identified accessibility blind spot in `tests/keyboard-accessibility.test.cjs`: the test called `.focus()` on Battle Arena before pressing Enter, so it could pass even if the button was not reachable with keyboard Tab. Reproduction: remove Battle Arena from sequential tab order while keeping programmatic focus; old test would still pass. Expected: keyboard-only users can Tab to Battle Arena and press Enter.
+- Added a bounded real Chromium Tab traversal and focus assertion in commit [a3174327](https://github.com/chrisnash25/SKB-MECH-MIND/commit/a317432786c096ccd8aececa48fb3b0ad304cab6). It retains the Enter-to-start flow and page-error check. New CI outcome must be verified before marking this regression green.
+- Next: inspect the new workflow and fix failures; add a keyboard-visible focus assertion, screen-reader names and focus restoration checks; audit the full 67-question content and mechanisms; test real Android and production Firebase independently. No production configuration or player data modified.
+
 ## Engineering follow-up — 16 November 2026 (failed CI and Mechanism Lab rotation)
 
 - Inspected GitHub Actions run [43782487846](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43782487846): **failure** at `node tests/lab-rotation.test.cjs`, assertion `Repeated Ratchet and pawl before finishing all four mechanisms` at line 23. Browser and mobile tests preceding it passed; persistence, multiplayer and Firestore emulator steps were skipped due to fail-fast. Therefore invitation expiry tests from commit `020dc879` remain **unverified**, not failed.
