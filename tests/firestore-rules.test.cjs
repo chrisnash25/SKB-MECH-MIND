@@ -97,6 +97,13 @@ async function main() {
           uid,round,hash:'b'.repeat(64),createdAt:serverTimestamp()
         });
         await assertSucceeds(batch.commit());
+        // Real Firestore emulator: even a fully completed host must not reveal
+        // answers while the guest is still progressing through rounds 1–9.
+        // Check both authenticated participants at every intermediate commit.
+        if (uid === guest && round < 9) {
+          await assertFails(getDocs(collection(hostDb,sealedPath)));
+          await assertFails(getDocs(collection(guestDb,sealedPath)));
+        }
       }
     }
     await submitTen(hostDb,host,'ratchet and pawl');
