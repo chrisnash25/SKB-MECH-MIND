@@ -194,7 +194,9 @@ class Gameplay(unittest.TestCase):
         self.click("Check my explanation")
         feedback = self.page.locator("#feedback").inner_text().strip()
         self.assertTrue(feedback)
-        self.assertIn(feedback, status.inner_text())
+        # Browser inner_text preserves paragraph breaks; live-region speech text
+        # intentionally flattens whitespace. Compare the words, not layout.
+        self.assertIn(" ".join(feedback.split()), " ".join(status.inner_text().split()))
         self.click("Workshop")
         self.assertEqual(status.count(), 1)
         self.assertEqual(status.inner_text(), self.page.locator("h1").inner_text())
