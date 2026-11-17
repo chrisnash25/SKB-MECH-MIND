@@ -56,10 +56,13 @@ jobs:
       - name: Run Python full-subject and gameplay regression suite
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Syntax-check Firebase multiplayer module
+        if: ${{ !cancelled() }}
         run: node --input-type=module --check < multiplayer.js
       - name: Simulate two-phone online battles in Chromium
+        if: ${{ !cancelled() }}
         run: node tests/multiplayer.test.cjs
       - name: Verify actual Firestore Security Rules in emulator
+        if: ${{ !cancelled() }}
         run: npx firebase emulators:exec --only firestore --project demo-mech-mind-rules "node tests/firestore-rules.test.cjs"
       - name: Upload mobile failure screenshots
         if: failure()
