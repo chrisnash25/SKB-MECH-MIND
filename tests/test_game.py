@@ -90,10 +90,8 @@ class Gameplay(unittest.TestCase):
 
     def test_battle(self):
         self.click("Battle Arena")
-        self.click("Online invitation setup")
-        # Online setup is optional; offline battle must remain accessible.
-        self.assertTrue(self.page.get_by_role("button", name="Play offline instead").count() > 0)
-        self.click("Play offline instead")
+        # Offline battle must work whether or not Firebase is configured.
+        self.click("Start offline battle")
         self.assertEqual(self.ev("new Set(game.pool.map(q=>q.name)).size"),5)
         self.ev("game.pool[0]=DB.find(q=>q.name==='Ratchet and pawl');battle()")
         total = 0
