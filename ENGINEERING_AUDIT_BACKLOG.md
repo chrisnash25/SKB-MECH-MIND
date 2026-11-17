@@ -1,3 +1,8 @@
+## 2026-11-17 06:49 UTC — CI blind spot: Python subject suite not executed (E-023)
+- **Reproduction:** Compare `tests/test_game.py` with `.github/workflows/game-tests.yml` on baseline `bb187f80`. The Python Playwright suite includes 67-subject uniqueness, aliases, partial-credit descriptions, five-round offline battle, persistence, daily replay, Mechanism Lab and viewport checks, but no CI step invoked it. Expected: all maintained regression suites execute on code changes; actual: Python tests were skipped entirely.
+- **Change:** [285fd620](https://github.com/chrisnash25/SKB-MECH-MIND/commit/285fd620c0c7be80421d8b69936ebe79257c6354) installs Python Playwright 1.58.0 and invokes unittest discovery after Chromium installation. Existing JS/emulator stages preserved. **CI result pending**; previously unexecuted Python assertions may expose real failures or stale selectors. Do not treat these assertions as independent engineering correctness proof.
+- **Next:** Inspect new Actions result/job logs and fix genuine failures or outdated test assumptions; retain subject coverage. Production Firebase, physical Android screen-reader, deployed E2E and complete subject correctness remain unverified. No player data/gameplay code changed.
+
 ## Engineering follow-up — 16 November 2026, 10:55 UTC (keyboard two-player flow)
 
 - **Verified prior baseline:** [Regression 43843320422](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43843320422) succeeded for commit 58f72cbb; [Pages deployment 43843338933](https://github.com/chrisnash25/SKB-MECH-MIND/actions/runs/43843338933) succeeded for a64652f6. No physical-device or production Firebase verification implied.
