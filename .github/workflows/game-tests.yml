@@ -49,6 +49,10 @@ jobs:
         run: node tests/lab-rotation.test.cjs
       - name: Test saved progress and corrupted storage recovery
         run: node tests/persistence.test.cjs
+      - name: Install Python Playwright test client
+        run: python -m pip install playwright==1.58.0
+      - name: Run Python full-subject and gameplay regression suite
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Syntax-check Firebase multiplayer module
         run: node --input-type=module --check < multiplayer.js
       - name: Simulate two-phone online battles in Chromium
