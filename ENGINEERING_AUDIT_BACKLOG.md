@@ -1,3 +1,8 @@
+## 2026-11-17 10:44 UTC — Browser accessibility regression added (E-027)
+- **Reproduction/expected:** Open Workshop, navigate to Mechanism Lab, select Ratchet and pawl, submit an incorrect explanation, return to Workshop. The persistent role=status/aria-live=polite node should survive redraws and reflect navigation headings and feedback; actual assistive-technology speech is not established by DOM assertions.
+- **Change:** Commit 9f1f605a adds Python Playwright checks for one persistent live region, accessibility attributes, navigation headings, and invalid lab feedback. Existing Python suite is invoked by game-tests.yml.
+- **Verification:** GitHub accepted test commit; no browser execution or new CI result verified in this run. **P1 next:** inspect push-triggered Actions result and repair failures; test actual TalkBack speech, successful answer and battle score announcements; verify Firebase reconnection with emulator and deployed app. No gameplay code changed.
+
 ## 2026-11-17 09:49 UTC — Screen-reader status region implemented (E-026)
 - **Root cause:** Main UI is replaced via `draw()` without a persistent live region, and invalid lab answers update a plain feedback container. Screen readers may not announce these updates.
 - **Change:** Commit [10834a1c](https://github.com/chrisnash25/SKB-MECH-MIND/commit/10834a1cb92af005cf745f5400945858854a003d) adds a persistent visually-hidden polite status region outside `#app`; navigation announces the new H1 and incorrect lab responses announce evaluator feedback. No score logic or saved data changed.
