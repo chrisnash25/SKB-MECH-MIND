@@ -110,36 +110,12 @@ body {
 		</div>
 
 		<script>
-// Keep full gameplay, but cap render resolution on high-DPI mobile devices.
-(function () {
-  try {
-    if (window.devicePixelRatio > 1) {
-      Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function () { return 1; } });
-    }
-  } catch (e) {}
-  // The previous publishing method installed a split-pack service worker.
-  // Unregister it to prevent delivery of obsolete, much larger game data.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      const own = regs.filter(function (r) { return r.scope.indexOf('/dropzone/') !== -1; });
-      if (!own.length) return;
-      return Promise.all(own.map(function (r) { return r.unregister(); })).then(function () {
-        if (navigator.serviceWorker.controller) {
-          const u=new URL(window.location.href);
-          u.searchParams.set('reload_build', 'webgl-safe-20261120');
-          if (!u.searchParams.has('sw_cleared')) {
-            u.searchParams.set('sw_cleared','1');
-            location.replace(u.toString());
-          }
-        }
-      });
-    }).catch(function () {});
-  }
-}());
+try { if (window.devicePixelRatio > 1) Object.defineProperty(window,'devicePixelRatio',{configurable:true,get:()=>1}); } catch(e) {}
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.filter(r=>r.scope.includes('/dropzone/')).forEach(r=>r.unregister())).catch(()=>{});
 </script>
 <script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":46398908,"index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":46399500,"index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 

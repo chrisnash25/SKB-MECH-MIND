@@ -1,3 +1,1 @@
-DROPZONE West Walk Parking 18 Nov 2026 - WebGL low-memory build 20 Nov 2026
-Source sha256: 1fdc566df8dbbbc2743b86f4c196e24eb266cd9a95d03083e5697d9772b12a92
-GitHub Actions build: 44664003713
+DROPZONE controller fix 20 Nov 2026: left stick camera, right stick movement, deadzone 0.19; touchscreen swapped; low memory web build.
