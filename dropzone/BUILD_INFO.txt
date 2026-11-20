@@ -1,1 +1,1 @@
-DROPZONE controller fix 20 Nov 2026: left stick movement, right stick camera, deadzone 0.19; touchscreen swapped; low memory web build.
+DROPZONE West Walk Parking + Tesco frontage and wave canopy, North Walk canopy, McDonalds, centre shops. 20 Nov 2026: Xbox left move/right look; Start menu, View map, A jump, B crouch, X punch, Y reload, LT aim, RT fire. Graphics Performance/Quality.\n
