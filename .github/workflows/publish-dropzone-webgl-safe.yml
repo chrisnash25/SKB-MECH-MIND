@@ -1,0 +1,75 @@
+name: Publish DROPZONE WebGL Low Memory
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-dropzone-webgl-safe.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download compiled low-memory latest game
+        env:
+          GAME_ZIP_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-0dfc-81f4-9523-5ca69da532d1/raw?se=2026-11-20T03%3A02%3A29Z&sp=r&sv=2026-06-06&sr=b&scid=cd36ffe1-e56c-5596-9edd-a63b84ada8bd&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T19%3A48%3A44Z&ske=2026-11-20T19%3A48%3A44Z&sks=b&skv=2026-06-06&sig=ggvuQDYHftZEBr0rQFvzfox4NmTOMDkrs4paSN5xXps%3D'
+        run: |
+          set -e
+          curl -fLsS --retry 3 "$GAME_ZIP_URL" -o /tmp/web.zip
+          echo "853d17f189636ab85b4a1818190b0ae381a476248d7f56837e540b1a8295d495  /tmp/web.zip" | sha256sum -c -
+          mkdir -p dropzone
+          unzip -qo /tmp/web.zip -d dropzone
+          for f in index.html index.js index.wasm index.pck; do test -s "dropzone/$f"; done
+          rm -f dropzone/index.pck.part0 dropzone/index.pck.part1 dropzone/split-pck-sw.js
+      - name: Cap mobile graphics resolution and invalidate old service worker
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('dropzone/index.html')
+          s=p.read_text()
+          tag='<script src="index.js"></script>'
+          script="""<script>
+          // Keep full gameplay, but cap render resolution on high-DPI mobile devices.
+          (function () {
+            try {
+              if (window.devicePixelRatio > 1) {
+                Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function () { return 1; } });
+              }
+            } catch (e) {}
+            // The previous publishing method installed a split-pack service worker.
+            // Unregister it to prevent delivery of obsolete, much larger game data.
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                const own = regs.filter(function (r) { return r.scope.indexOf('/dropzone/') !== -1; });
+                if (!own.length) return;
+                return Promise.all(own.map(function (r) { return r.unregister(); })).then(function () {
+                  if (navigator.serviceWorker.controller) {
+                    const u=new URL(window.location.href);
+                    u.searchParams.set('reload_build', 'webgl-safe-20261120');
+                    if (!u.searchParams.has('sw_cleared')) {
+                      u.searchParams.set('sw_cleared','1');
+                      location.replace(u.toString());
+                    }
+                  }
+                });
+              }).catch(function () {});
+            }
+          }());
+          </script>"""
+          assert tag in s, 'Godot engine script tag missing'
+          p.write_text(s.replace(tag,script+'\n'+tag,1))
+          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE West Walk Parking 18 Nov 2026 - WebGL low-memory build 20 Nov 2026\nSource sha256: 1fdc566df8dbbbc2743b86f4c196e24eb266cd9a95d03083e5697d9772b12a92\nGitHub Actions build: 44664003713\n')
+          PY
+          test -s dropzone/index.html
+          test -s dropzone/index.pck
+          ls -lh dropzone/index.*
+      - name: Publish files to existing public GitHub Pages site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A dropzone/
+          git commit -m "Fix DROPZONE WebGL context loss with low-memory latest build" || exit 0
+          git push origin HEAD:main
