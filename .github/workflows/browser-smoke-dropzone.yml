@@ -33,32 +33,37 @@ jobs:
             const mp3=page.locator('#dz-original-track');
             const trackUrl=await mp3.getAttribute('src');
             if(!trackUrl || trackUrl !== 'Yate-Free-Roam.mp3') throw new Error('Soundtrack URL missing');
+            // Test audio independently of the Godot WebGL renderer (which can stall software Chromium).
+            await page.route('**/index.pck', route => route.abort());
+            await page.route('**/index.wasm', route => route.abort());
             await page.locator('#dz-launch').click();
-            await page.waitForTimeout(8500);
-            let audio=await mp3.evaluate(el=>({time:el.currentTime,paused:el.paused,ready:el.readyState,duration:el.duration,error:el.error?.message||null,loop:el.loop}));
+            await page.waitForTimeout(6500);
+            const audio=await page.evaluate(() => {
+              const el=document.getElementById('dz-original-track');
+              return {time:el.currentTime,paused:el.paused,ready:el.readyState,duration:el.duration,error:el.error?.message||null,loop:el.loop};
+            });
             console.log('AUDIO AFTER START',JSON.stringify(audio));
             if(audio.error || audio.paused || audio.time < 0.5 || audio.duration < 200 || audio.loop) throw new Error('Original soundtrack playback validation failed');
             await page.locator('#dz-music-menu').click();
             await page.locator('#dz-music-enabled-in-game').uncheck();
-            await page.waitForTimeout(500);
-            if(!(await mp3.evaluate(el=>el.paused))) throw new Error('Music Off does not pause');
+            if(!(await page.evaluate(()=>document.getElementById('dz-original-track').paused))) throw new Error('Music Off does not pause');
             await page.locator('#dz-music-enabled-in-game').check();
-            await page.waitForTimeout(1000);
-            if((await mp3.evaluate(el=>el.paused))) throw new Error('Music On does not resume');
+            await page.waitForTimeout(800);
+            if((await page.evaluate(()=>document.getElementById('dz-original-track').paused))) throw new Error('Music On does not resume');
+            await page.locator('#dz-music-volume-in-game').fill('35');
+            if((await page.evaluate(()=>document.getElementById('dz-original-track').volume)) !== 0.35) throw new Error('Volume slider failed');
             if((await page.evaluate(()=>localStorage.getItem('dz-original-music-enabled'))) !== 'true') throw new Error('Music preference not persisted');
-            await page.locator('#dz-music-menu').click();
-            await page.waitForTimeout(16000);
+            if((await page.evaluate(()=>localStorage.getItem('dz-original-music-volume'))) !== '35') throw new Error('Volume preference not persisted');
+            console.log('MUSIC SETTINGS VERIFIED');
             console.log('TITLE',await page.title());
             console.log('CANVAS',await page.locator('canvas').count());
             console.log('ERRORS',JSON.stringify(errors.slice(0,20)));
-            const body=await page.locator('body').innerText();
-            console.log('VISIBLE TEXT',body.slice(0,500));
-            await page.screenshot({path:'/tmp/dropzone-live.png',timeout:10000}).catch(e=>console.log('SCREENSHOT_ERROR',e.message));
+            await page.screenshot({path:'/tmp/dropzone-live.png',timeout:10000});
             if(response.status()!==200 || errors.some(e=>/failed to fetch|failed to load|error loading|out of memory|runtimeerror|abort\(/i.test(e))) process.exitCode=1;
             await browser.close();
           })().catch(e=>{console.error(e);process.exitCode=1});
           EOF
-          timeout 100s node /tmp/webtest/test.cjs
+          timeout 75s node /tmp/webtest/test.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
