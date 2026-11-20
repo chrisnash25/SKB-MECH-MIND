@@ -13,13 +13,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Retrieve corrected game project
         env:
-          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-0164-81f4-a3e1-0aed08de3be7/raw?se=2026-11-20T03%3A26%3A06Z&sp=r&sv=2026-06-06&sr=b&scid=aafeedb0-0bb9-5c1a-b9fd-042f158bdab6&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T19%3A46%3A25Z&ske=2026-11-20T19%3A46%3A25Z&sks=b&skv=2026-06-06&sig=LgySLF0xVoII7LzNZ90pxd%2BNhSJ47It%2BZhUeWipHZnY%3D'
+          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-a710-81f4-bb38-8532b6bf4e6f/raw?se=2026-11-20T03%3A29%3A39Z&sp=r&sv=2026-06-06&sr=b&scid=6f70af54-8bf6-5a6f-a41e-e63d6a61301a&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T19%3A30%3A45Z&ske=2026-11-20T19%3A30%3A45Z&sks=b&skv=2026-06-06&sig=mbecZ2KGpcgakCFPg5HhbtoXIQimF38Y9nWkdVd/dyM%3D'
         run: |
           curl -fLsS --retry 3 "$SOURCE_URL" -o /tmp/game.zip
-          echo '905f53a286dce418aa4c7e876615b9745064f38608694f0b9c9dc0fa8978d5ad  /tmp/game.zip' | sha256sum -c -
+          echo 'e681c3ea568a67e4535e41b9bf064dcd31b42226f6d68b028a0428fb6f9ffd80  /tmp/game.zip' | sha256sum -c -
           mkdir -p /tmp/game
           unzip -q /tmp/game.zip -d /tmp/game
           test -f /tmp/game/scripts/game.gd
+          grep -q 'var pad_move := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X)' /tmp/game/scripts/game.gd
+          grep -q 'var pad_look := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)' /tmp/game/scripts/game.gd
           grep -q 'JOY_AXIS_RIGHT_X' /tmp/game/scripts/game.gd
       - name: Install Godot 4.6.3
         run: |
@@ -78,10 +80,10 @@ jobs:
           </script>
           """+tag,1)
           p.write_text(s)
-          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE controller fix 20 Nov 2026: left stick camera, right stick movement, deadzone 0.19; touchscreen swapped; low memory web build.\n')
+          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE controller fix 20 Nov 2026: left stick movement, right stick camera, deadzone 0.19; touchscreen swapped; low memory web build.\n')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A dropzone/
-          git commit -m "Fix DROPZONE gamepad and touchscreen stick mappings" || exit 0
+          git commit -m "Fix DROPZONE standard Xbox controls" || exit 0
           git push origin HEAD:main
