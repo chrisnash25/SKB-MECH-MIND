@@ -1,0 +1,18 @@
+name: Inspect hosting configuration for DROPZONE
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/dropzone-pages-info.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect existing Pages site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/pages" | python3 -c 'import json,sys; j=json.load(sys.stdin); print(json.dumps({"html_url":j.get("html_url"),"status":j.get("status"),"build_type":j.get("build_type"),"source":j.get("source"),"public":j.get("public")},indent=2))'
