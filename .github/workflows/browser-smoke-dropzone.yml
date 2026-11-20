@@ -32,7 +32,7 @@ jobs:
             await page.waitForSelector('#dz-launch',{timeout:15000});
             const mp3=page.locator('#dz-original-track');
             const trackUrl=await mp3.getAttribute('src');
-            if(!trackUrl || !trackUrl.includes('/soundtrack-v1/Yate-Free-Roam.mp3')) throw new Error('Soundtrack URL missing');
+            if(!trackUrl || trackUrl !== 'Yate-Free-Roam.mp3') throw new Error('Soundtrack URL missing');
             await page.locator('#dz-launch').click();
             await page.waitForTimeout(8500);
             let audio=await mp3.evaluate(el=>({time:el.currentTime,paused:el.paused,ready:el.readyState,duration:el.duration,error:el.error?.message||null,loop:el.loop}));
