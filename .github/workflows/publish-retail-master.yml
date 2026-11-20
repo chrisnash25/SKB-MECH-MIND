@@ -1,4 +1,4 @@
-name: DROPZONE Yate Retail Master Visual Update
+name: DROPZONE Tesco Extra Front Sign Update
 on:
   push:
     branches: [main]
@@ -14,14 +14,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download complete retail visual project
         env:
-          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-a90c-81f4-b9fc-c2311f59a023/raw?se=2026-11-20T04%3A32%3A58Z&sp=r&sv=2026-06-06&sr=b&scid=3f2191ba-46a1-5bd4-b8dc-ce59f84e999b&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T04%3A09%3A55Z&ske=2026-11-21T04%3A09%3A55Z&sks=b&skv=2026-06-06&sig=vTLIhQv%2BeYbuvlvyo58fD3C4HIJFCJ8ikMaQ/ah/gKY%3D'
+          SOURCE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-70f8-8210-aa04-3f71340ef01f/raw?se=2026-11-20T22%3A55%3A45Z&sp=r&sv=2026-06-06&sr=b&scid=e4e2c473-4b68-56bb-9bbc-04b306e14232&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T08%3A45%3A59Z&ske=2026-11-21T08%3A45%3A59Z&sks=b&skv=2026-06-06&sig=XZ8VSnFGfq4FdFNOa9OGZUrCbdU9p1aXoSQXb9d1KLA%3D'
         run: |
           set -e
           curl -fLsS --retry 3 "$SOURCE_URL" -o /tmp/game.zip
-          echo 'b13ef5aef6e8be5ee26fb2b1799df59d67ce4777954ff0f6d229aafce2d8b4fb  /tmp/game.zip' | sha256sum -c -
+          echo 'c8d4fea2b5db196c5e045539ab07ebc64bcba11cab630fe5ab1074b971cdb341  /tmp/game.zip' | sha256sum -c -
           mkdir -p /tmp/game
           unzip -q /tmp/game.zip -d /tmp/game
-          for f in project.godot main.tscn tests/retail_smoke.gd assets/signage/shops_atlas.png assets/signage/tesco_wordmark.png assets/signage/mcdonalds_fascia.png world/retail_furniture.json; do test -s "/tmp/game/$f"; done
+          for f in project.godot main.tscn tests/retail_smoke.gd tests/tesco_sign_smoke.gd assets/signage/shops_atlas.png assets/signage/tesco_wordmark.png assets/signage/mcdonalds_fascia.png world/retail_furniture.json; do test -s "/tmp/game/$f"; done
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -53,6 +53,11 @@ jobs:
           set -o pipefail
           timeout 120s godot --headless --path /tmp/game --script res://tests/retail_smoke.gd 2>&1 | tee /tmp/retail-smoke.log
           grep -q RETAIL_MASTER_SMOKE_PASS /tmp/retail-smoke.log
+      - name: Verify large front-facing Tesco Extra sign from photo
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path /tmp/game --script res://tests/tesco_sign_smoke.gd 2>&1 | tee /tmp/tesco-sign-smoke.log
+          grep -q TESCO_SIGN_SMOKE_PASS /tmp/tesco-sign-smoke.log
       - name: Preserve gamepad controls
         run: |
           set -o pipefail
@@ -109,10 +114,10 @@ jobs:
           </script>
           """+tag,1)
           p.write_text(s)
-          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE Yate Retail Master, 20 November 2026. Based on West Walk Parking with 73 shop locations, new fascia atlas, Tesco and McDonalds branded signage, North Walk canopy lights, bollards, car-park lamps and parking wayfinding. Gameplay and Xbox controls preserved. Source sha256 b13ef5aef6e8be5ee26fb2b1799df59d67ce4777954ff0f6d229aafce2d8b4fb.\n')
+          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE Tesco Extra front sign, 20 November 2026. Reference photo update: large red serif TESCO, five blue underline slashes, blue italic extra, outside-facing canopy position. Existing Yate retail master, 73 shops, McDonalds, canopies, furniture, gameplay and Xbox controls preserved. Source sha256 c8d4fea2b5db196c5e045539ab07ebc64bcba11cab630fe5ab1074b971cdb341.\n')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A dropzone/
-          git commit -m "Publish complete Yate retail master graphics update" || exit 0
+          git commit -m "Restore large photo-matched Tesco Extra front-of-shop sign" || exit 0
           git push origin HEAD:main
