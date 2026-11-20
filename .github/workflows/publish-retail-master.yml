@@ -109,7 +109,7 @@ jobs:
           original=Path('.github/assets/dropzone-index-with-music-and-splash.html').read_text()
           # Preserve the original YATE FREE ROAM splash, MP3, settings and start button.
           assert 'Yate-Free-Roam.mp3' in original and 'yate_splash.jpg' in original
-          pat=r'const GODOT_CONFIG = \\{[^\\n]+\\};'
+          pat=r'const GODOT_CONFIG = \{[^\n]+\};'
           cfg=re.search(pat,generated)
           assert cfg, 'Generated engine config missing'
           original,count=re.subn(pat,lambda m:cfg.group(0),original,count=1)
