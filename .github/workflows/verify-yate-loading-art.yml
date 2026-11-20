@@ -1,0 +1,74 @@
+name: Verify Yate Loading Screen Artwork
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-yate-loading-art.yml'
+      - 'dropzone/index.html'
+      - 'dropzone/yate_splash.jpg'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-loading-art:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up visual browser check
+        run: |
+          mkdir -p /tmp/dzloading && cd /tmp/dzloading
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Confirm published artwork and both display modes
+        run: |
+          cat > /tmp/dzloading/verify.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          const url='https://chrisnash25.github.io/SKB-MECH-MIND/dropzone/';
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--disable-gpu']});
+            const page=await browser.newPage({viewport:{width:1280,height:720}});
+            const res=await page.goto(url+'?artcheck='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+            if(res.status()!==200) throw Error('Game page HTTP '+res.status());
+            const splash=await page.evaluate(async()=>{
+              const el=document.querySelector('#status-splash');
+              const overlay=document.querySelector('#dz-music-overlay');
+              if(!el||!overlay) throw Error('Loading screen DOM elements missing');
+              const imageUrl=el.getAttribute('src');
+              const background=getComputedStyle(overlay).backgroundImage;
+              const response=await fetch('yate_splash.jpg?verify='+Date.now(),{cache:'no-store'});
+              if(!response.ok) throw Error('Yate original splash HTTP '+response.status);
+              const img=new Image(); img.src=imageUrl;
+              await img.decode();
+              return {imageUrl,background,dimensions:[img.naturalWidth,img.naturalHeight],visible:getComputedStyle(overlay).display};
+            });
+            console.log('ORIGINAL YATE SPLASH',JSON.stringify(splash));
+            if(splash.imageUrl!=='yate_splash.jpg'||!splash.background.includes('yate_splash.jpg')||splash.dimensions[0]<1000||splash.visible==='none') throw Error('Original artwork missing or invisible in start menu');
+            await page.screenshot({path:'/tmp/dropzone-start-screen.png'});
+            await page.evaluate(()=>{
+              document.getElementById('dz-music-overlay').style.display='none';
+              document.getElementById('status').style.visibility='visible';
+              document.getElementById('status-progress').style.display='block';
+              document.getElementById('dz-loading-caption').style.display='block';
+              document.getElementById('status-progress').value=45;
+              document.getElementById('status-progress').max=100;
+            });
+            const visible=await page.evaluate(()=>({
+              splash:getComputedStyle(document.getElementById('status-splash')).display,
+              caption:getComputedStyle(document.getElementById('dz-loading-caption')).display,
+              progress:getComputedStyle(document.getElementById('status-progress')).display
+            }));
+            if(visible.splash==='none'||visible.caption==='none'||visible.progress==='none') throw Error('Loading splash/progress is not visible');
+            await page.screenshot({path:'/tmp/dropzone-loading-screen.png'});
+            console.log('PASS: Original splash visible before game and during loading. Both screenshots captured.');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          EOF
+          timeout 75s node /tmp/dzloading/verify.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-yate-loading-art-screenshots
+          path: |
+            /tmp/dropzone-start-screen.png
+            /tmp/dropzone-loading-screen.png
+          if-no-files-found: ignore
