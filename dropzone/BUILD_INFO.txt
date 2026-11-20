@@ -1,3 +1,3 @@
-DROPZONE West Walk Parking - source snapshot 2026-11-18
-Source SHA256: b5e56cd70aab99a8d8f7fee60512201745a321c3ae959931acda7eeba3ac992e
-Build: 44661973184
+DROPZONE West Walk Parking 18 Nov 2026 - WebGL low-memory build 20 Nov 2026
+Source sha256: 1fdc566df8dbbbc2743b86f4c196e24eb266cd9a95d03083e5697d9772b12a92
+GitHub Actions build: 44664003713
