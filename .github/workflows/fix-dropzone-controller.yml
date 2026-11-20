@@ -37,6 +37,11 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           unzip -q /tmp/templates.tpz -d /tmp/templates-dir
           cp -a /tmp/templates-dir/templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+      - name: Import 3D models, textures and audio before runtime checks
+        run: |
+          godot --headless --path /tmp/game --editor --import 2>&1 | tee /tmp/import.log
+          test -d /tmp/game/.godot/imported
+          test -n "$(find /tmp/game/.godot/imported -name '*.scn' -print -quit)"
       - name: Verify gamepad buttons in Godot
         run: |
           godot --headless --path /tmp/game --script res://tests/gamepad_smoke.gd 2>&1 | tee /tmp/gamepad-smoke.log
@@ -70,7 +75,6 @@ jobs:
           html/focus_canvas_on_start=true
           progressive_web_app/enabled=false
           EOF
-          godot --headless --path /tmp/game --editor --import
           godot --headless --path /tmp/game --export-release Web /tmp/web/index.html
           test -s /tmp/web/index.html
           test -s /tmp/web/index.pck
@@ -93,7 +97,7 @@ jobs:
           </script>
           """+tag,1)
           p.write_text(s)
-          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE controller fix 20 Nov 2026: left stick movement, right stick camera, deadzone 0.19; touchscreen swapped; low memory web build.\n')
+          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE West Walk Parking + Tesco frontage and wave canopy, North Walk canopy, McDonalds, centre shops. 20 Nov 2026: Xbox left move/right look; Start menu, View map, A jump, B crouch, X punch, Y reload, LT aim, RT fire. Graphics Performance/Quality.\\n')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
