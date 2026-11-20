@@ -1,4 +1,5 @@
 name: Browser Smoke Test DROPZONE
+# Tesco Xbox validation: latest landmark graphics and gamepad HUD, 2026-11-20
 on:
   push:
     branches: [main]
