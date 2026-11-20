@@ -1,0 +1,37 @@
+name: Publish latest DROPZONE Web Game
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-dropzone-web.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-game:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Retrieve verified latest game build
+        env:
+          GAME_ZIP_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-8414-81f4-a4ed-831c735c903b/raw?se=2026-11-20T02%3A44%3A01Z&sp=r&sv=2026-06-06&sr=b&scid=d16b5452-3b90-5a91-835d-4753d1c14115&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T19%3A54%3A11Z&ske=2026-11-20T19%3A54%3A11Z&sks=b&skv=2026-06-06&sig=FXEW79pSx0tF9kcECpd4VenmFhIcQUdROPFOFwHE44M%3D'
+        run: |
+          curl -fLsS --retry 3 "$GAME_ZIP_URL" -o /tmp/dropzone-game.zip
+          echo "e7a52619cee7272bbb990d6653cf23716e351e9b1500ce2a26b93b02112b7a10  /tmp/dropzone-game.zip" | sha256sum -c -
+          mkdir -p dropzone
+          unzip -o -q /tmp/dropzone-game.zip -d dropzone
+          test -s dropzone/index.html
+          test -s dropzone/index.js
+          test -s dropzone/index.pck
+          test -s dropzone/index.wasm
+          test "$(stat -c '%s' dropzone/index.pck)" -lt 100000000
+          printf 'DROPZONE West Walk Parking - source snapshot 2026-11-18\nSource SHA256: b5e56cd70aab99a8d8f7fee60512201745a321c3ae959931acda7eeba3ac992e\nBuild: 44661973184\n' > dropzone/BUILD_INFO.txt
+          ls -lh dropzone
+      - name: Commit playable files to existing Pages source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dropzone/
+          git commit -m "Publish latest DROPZONE West Walk game files" || exit 0
+          git push origin HEAD:main
