@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download complete retail visual project
         env:
-          SOURCE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-70f8-8210-aa04-3f71340ef01f/raw?se=2026-11-20T22%3A55%3A45Z&sp=r&sv=2026-06-06&sr=b&scid=e4e2c473-4b68-56bb-9bbc-04b306e14232&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T08%3A45%3A59Z&ske=2026-11-21T08%3A45%3A59Z&sks=b&skv=2026-06-06&sig=XZ8VSnFGfq4FdFNOa9OGZUrCbdU9p1aXoSQXb9d1KLA%3D'
+          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-6a54-81f4-819d-3b1235f28ec5/raw?se=2026-11-20T22%3A57%3A59Z&sp=r&sv=2026-06-06&sr=b&scid=7817223d-eb6b-56f5-90c3-774c9c3f5b85&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T08%3A45%3A54Z&ske=2026-11-21T08%3A45%3A54Z&sks=b&skv=2026-06-06&sig=8xwW6vVmjNvXmIzTJe5zD0%2BntjN6yDXkQNBspUpzPSo%3D'
         run: |
           set -e
           curl -fLsS --retry 3 "$SOURCE_URL" -o /tmp/game.zip
-          echo 'c8d4fea2b5db196c5e045539ab07ebc64bcba11cab630fe5ab1074b971cdb341  /tmp/game.zip' | sha256sum -c -
+          echo 'e39eddfdc4d20acd8e5e270c64596977e54bece1c1ced782cc8fe4f5349868a6  /tmp/game.zip' | sha256sum -c -
           mkdir -p /tmp/game
           unzip -q /tmp/game.zip -d /tmp/game
           for f in project.godot main.tscn tests/retail_smoke.gd tests/tesco_sign_smoke.gd assets/signage/shops_atlas.png assets/signage/tesco_wordmark.png assets/signage/mcdonalds_fascia.png world/retail_furniture.json; do test -s "/tmp/game/$f"; done
@@ -117,7 +117,7 @@ jobs:
           Path('dropzone/index.html').write_text(original)
           for asset in ['Yate-Free-Roam.mp3','yate_splash.jpg']:
             assert Path('dropzone',asset).is_file(), 'Missing original asset: '+asset
-          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE Tesco Extra front sign, 20 November 2026. Large red serif TESCO, five blue slashes, blue italic extra on outside-facing wave canopy. Retail master shops, McDonalds, Xbox controller, original Yate splash and soundtrack preserved. Source sha256 c8d4fea2b5db196c5e045539ab07ebc64bcba11cab630fe5ab1074b971cdb341.\\n')
+          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE Tesco Extra front sign, 20 November 2026. Large red serif TESCO, five blue slashes, blue italic extra on outside-facing wave canopy. Retail master shops, McDonalds, Xbox controller, original Yate splash and soundtrack preserved. Source sha256 e39eddfdc4d20acd8e5e270c64596977e54bece1c1ced782cc8fe4f5349868a6.\\n')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
