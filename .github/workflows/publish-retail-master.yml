@@ -104,17 +104,20 @@ jobs:
           rm -f dropzone/index.pck.part0 dropzone/index.pck.part1 dropzone/split-pck-sw.js
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('dropzone/index.html')
-          s=p.read_text()
-          tag='<script src="index.js"></script>'
-          assert tag in s
-          s=s.replace(tag,"""<script>
-          try { if (window.devicePixelRatio > 1) Object.defineProperty(window,'devicePixelRatio',{configurable:true,get:()=>1}); } catch(e) {}
-          if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.filter(r=>r.scope.includes('/dropzone/')).forEach(r=>r.unregister())).catch(()=>{});
-          </script>
-          """+tag,1)
-          p.write_text(s)
-          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE Tesco Extra front sign, 20 November 2026. Reference photo update: large red serif TESCO, five blue underline slashes, blue italic extra, outside-facing canopy position. Existing Yate retail master, 73 shops, McDonalds, canopies, furniture, gameplay and Xbox controls preserved. Source sha256 c8d4fea2b5db196c5e045539ab07ebc64bcba11cab630fe5ab1074b971cdb341.\n')
+          import re
+          generated=Path('dropzone/index.html').read_text()
+          original=Path('.github/assets/dropzone-index-with-music-and-splash.html').read_text()
+          # Preserve the original YATE FREE ROAM splash, MP3, settings and start button.
+          assert 'Yate-Free-Roam.mp3' in original and 'yate_splash.jpg' in original
+          pat=r'const GODOT_CONFIG = \\{[^\\n]+\\};'
+          cfg=re.search(pat,generated)
+          assert cfg, 'Generated engine config missing'
+          original,count=re.subn(pat,lambda m:cfg.group(0),original,count=1)
+          assert count==1
+          Path('dropzone/index.html').write_text(original)
+          for asset in ['Yate-Free-Roam.mp3','yate_splash.jpg']:
+            assert Path('dropzone',asset).is_file(), 'Missing original asset: '+asset
+          Path('dropzone/BUILD_INFO.txt').write_text('DROPZONE Tesco Extra front sign, 20 November 2026. Large red serif TESCO, five blue slashes, blue italic extra on outside-facing wave canopy. Retail master shops, McDonalds, Xbox controller, original Yate splash and soundtrack preserved. Source sha256 c8d4fea2b5db196c5e045539ab07ebc64bcba11cab630fe5ab1074b971cdb341.\\n')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
