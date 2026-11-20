@@ -1,0 +1,2 @@
+DROPZONE latest West Walk Parking snapshot 18 Nov 2026
+Source SHA256: b5e56cd70aab99a8d8f7fee60512201745a321c3ae959931acda7eeba3ac992e
