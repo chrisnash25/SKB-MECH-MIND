@@ -1,4 +1,4 @@
-name: DROPZONE Fix Analog Sticks and Publish
+name: DROPZONE Restore Tesco Graphics and Xbox Buttons
 on:
   push:
     branches: [main]
@@ -13,16 +13,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Retrieve corrected game project
         env:
-          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-a710-81f4-bb38-8532b6bf4e6f/raw?se=2026-11-20T03%3A29%3A39Z&sp=r&sv=2026-06-06&sr=b&scid=6f70af54-8bf6-5a6f-a41e-e63d6a61301a&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T19%3A30%3A45Z&ske=2026-11-20T19%3A30%3A45Z&sks=b&skv=2026-06-06&sig=mbecZ2KGpcgakCFPg5HhbtoXIQimF38Y9nWkdVd/dyM%3D'
+          SOURCE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-3908-8210-adc0-26b13215e349/raw?se=2026-11-20T03%3A50%3A36Z&sp=r&sv=2026-06-06&sr=b&scid=01ed4c35-bbc7-565f-9526-3674d0e6d9be&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T19%3A38%3A35Z&ske=2026-11-20T19%3A38%3A35Z&sks=b&skv=2026-06-06&sig=jlyRxcfxX6mEJ%2BrpdrzVc8yYrvx9G12Eg%2BN77bzUC5g%3D'
         run: |
           curl -fLsS --retry 3 "$SOURCE_URL" -o /tmp/game.zip
-          echo 'e681c3ea568a67e4535e41b9bf064dcd31b42226f6d68b028a0428fb6f9ffd80  /tmp/game.zip' | sha256sum -c -
+          echo '59431acadf89416d7393edd288cdaf696497d7c73dd70d9465e951291fc42802  /tmp/game.zip' | sha256sum -c -
           mkdir -p /tmp/game
           unzip -q /tmp/game.zip -d /tmp/game
           test -f /tmp/game/scripts/game.gd
-          grep -q 'var pad_move := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X)' /tmp/game/scripts/game.gd
-          grep -q 'var pad_look := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)' /tmp/game/scripts/game.gd
+          grep -q 'JOY_AXIS_LEFT_X' /tmp/game/scripts/game.gd
           grep -q 'JOY_AXIS_RIGHT_X' /tmp/game/scripts/game.gd
+          grep -q 'JOY_AXIS_TRIGGER_RIGHT' /tmp/game/scripts/game.gd
+          grep -q 'JOY_BUTTON_START' /tmp/game/scripts/gamepad_hotkeys.gd
+          grep -q 'JOY_BUTTON_BACK' /tmp/game/scripts/gamepad_hotkeys.gd
+          for asset in assets/environment/TescoCanopy.glb assets/environment/TescoFrontage.glb assets/environment/NorthWalkCanopy.glb world/TescoCanopy.tscn world/TescoFrontage.tscn world/NorthWalkCanopy.tscn; do
+            test -s "/tmp/game/$asset" || exit 1
+          done
       - name: Install Godot 4.6.3
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -O /tmp/godot.zip
@@ -32,6 +37,14 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           unzip -q /tmp/templates.tpz -d /tmp/templates-dir
           cp -a /tmp/templates-dir/templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+      - name: Verify gamepad buttons in Godot
+        run: |
+          godot --headless --path /tmp/game --script res://tests/gamepad_smoke.gd 2>&1 | tee /tmp/gamepad-smoke.log
+          grep -q 'GAMEPAD_SMOKE_PASS' /tmp/gamepad-smoke.log
+      - name: Validate latest map startup
+        run: |
+          timeout 100s godot --headless --path /tmp/game --quit-after 35 2>&1 | tee /tmp/game-runtime.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script' /tmp/game-runtime.log; then exit 1; fi
       - name: Export browser game with corrected sticks
         run: |
           mkdir -p /tmp/web
@@ -85,5 +98,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A dropzone/
-          git commit -m "Fix DROPZONE standard Xbox controls" || exit 0
+          git commit -m "Restore Tesco and canopy visibility and map Xbox controls" || exit 0
           git push origin HEAD:main
