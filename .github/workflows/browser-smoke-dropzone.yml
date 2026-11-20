@@ -1,0 +1,48 @@
+name: Browser Smoke Test DROPZONE
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/browser-smoke-dropzone.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Chromium browser automation
+        run: |
+          mkdir -p /tmp/webtest && cd /tmp/webtest
+          npm init -y >/dev/null
+          npm install playwright@1.58.2 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Load actual published game
+        run: |
+          cat > /tmp/webtest/test.cjs <<'EOF'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
+            const page=await browser.newPage({viewport:{width:1280,height:720}});
+            const errors=[];
+            page.on('pageerror', e=>errors.push(e.message));
+            page.on('console', m=>{if(m.type()==='error')errors.push(m.text())});
+            const response=await page.goto('https://chrisnash25.github.io/SKB-MECH-MIND/dropzone/',{waitUntil:'domcontentloaded',timeout:60000});
+            console.log('PAGE HTTP',response.status());
+            await page.waitForTimeout(25000);
+            console.log('TITLE',await page.title());
+            console.log('CANVAS',await page.locator('canvas').count());
+            console.log('ERRORS',JSON.stringify(errors.slice(0,20)));
+            const body=await page.locator('body').innerText();
+            console.log('VISIBLE TEXT',body.slice(0,500));
+            await page.screenshot({path:'/tmp/dropzone-live.png'});
+            if(response.status()!==200 || errors.some(e=>/failed to fetch|failed to load|error loading|out of memory|runtimeerror|abort\(/i.test(e))) process.exitCode=1;
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          EOF
+          node /tmp/webtest/test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dropzone-live-browser-screenshot
+          path: /tmp/dropzone-live.png
+          if-no-files-found: ignore
