@@ -1,0 +1,49 @@
+name: Diagnose DROPZONE mobile WebGL runtime
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/test-dropzone-mobile-webgl.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-browser:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Install Chromium
+        run: |
+          mkdir -p /tmp/webgl-mobile && cd /tmp/webgl-mobile
+          npm init -y >/dev/null
+          npm install playwright@1.58.2 --no-audit --no-fund
+          npx playwright install chromium
+      - name: Launch real published DROPZONE in mobile viewport
+        run: |
+          cat > /tmp/webgl-mobile/test.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:true,hasTouch:true});
+            const errors=[];
+            page.on('pageerror',e=>errors.push('PAGE '+e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text().slice(0,600))});
+            await page.addInitScript(()=>{window.__contextLostObserved=false;document.addEventListener('webglcontextlost',()=>{window.__contextLostObserved=true},true)});
+            const res=await page.goto('https://chrisnash25.github.io/SKB-MECH-MIND/dropzone/?test=mobile-webgl',{waitUntil:'domcontentloaded',timeout:60000});
+            console.log('HTTP',res.status());
+            await page.waitForTimeout(35000);
+            const s=await page.evaluate(()=>{
+              const canvas=document.querySelector('#canvas');
+              let gl=null;
+              try{gl=canvas?.getContext('webgl2')}catch(e){}
+              return {devicePixelRatio:window.devicePixelRatio,canvasW:canvas?.width,canvasH:canvas?.height,
+                      webgl2Available:!!gl,contextLost:gl?.isContextLost(),everLost:window.__contextLostObserved,
+                      gameStarted:!document.querySelector('#status'),notice:document.querySelector('#status-notice')?.innerText||''};
+            });
+            console.log('WEBGL_RUNTIME',JSON.stringify(s));
+            console.log('JAVASCRIPT_ERRORS',JSON.stringify(errors.slice(0,12)));
+            if(res.status()!==200 || !s.webgl2Available || s.contextLost || s.everLost || !s.gameStarted || errors.some(e=>/out of memory|webgl context lost|error loading|failed to load|abort\(/i.test(e))) process.exitCode=1;
+            await browser.close();
+          })().catch(e=>{console.error('BROWSER TEST ERROR',e);process.exitCode=1});
+          EOF
+          cd /tmp/webgl-mobile
+          timeout 120s node test.cjs
