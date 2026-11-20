@@ -108,6 +108,68 @@ body {
 #dz-settings-panel{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);width:min(90vw,295px);box-sizing:border-box;background:#111a2e;border:1px solid #bba960;border-radius:10px;padding:12px 16px}
 #dz-settings-panel .dz-audio-row{margin:10px 0}
 
+
+/* Restore the creator's original 16:9 loading and start-screen artwork */
+#dz-music-overlay {
+  background: #070b12 url("yate_splash.jpg") center center / contain no-repeat;
+  align-items:flex-end;
+  justify-content:flex-end;
+  padding:16px max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) 18px;
+}
+#dz-start-card {
+  width:min(92vw,335px);
+  max-height:55vh;
+  padding:13px 18px;
+  border-radius:12px;
+  background:rgba(7,12,25,.84);
+  box-shadow:0 6px 30px rgba(0,0,0,.45);
+  backdrop-filter:blur(6px);
+}
+#dz-start-card h1, #dz-start-card > p:first-of-type {display:none;}
+#dz-start-card .dz-audio-row {margin:8px 0;font-size:14px;}
+#dz-start-card #dz-launch{margin-top:10px;padding:12px;font-size:18px;}
+#dz-music-info{font-size:11px!important;margin:6px 0 0!important;line-height:1.25!important;}
+#status {
+  background:#05070c;
+  z-index:40;
+}
+#status-splash {
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+#status-progress {
+  position:absolute;
+  display:none;
+  bottom:7%;
+  width:min(68%,520px);
+  height:12px;
+  accent-color:#ffdc55;
+  z-index:42;
+  filter:drop-shadow(0 2px 9px #000);
+}
+#dz-loading-caption {
+  display:none;
+  position:absolute;
+  left:0;right:0;
+  bottom:calc(7% + 19px);
+  text-align:center;
+  color:white;
+  font:bold 15px Arial,sans-serif;
+  letter-spacing:.7px;
+  text-shadow:0 2px 7px #000, 0 0 14px #000;
+  z-index:42;
+  pointer-events:none;
+}
+@media (max-width:640px) {
+  #dz-start-card{padding:12px 14px;max-height:48vh;}
+  #dz-music-info{display:none;}
+  #dz-music-overlay{justify-content:center;padding:10px 12px calc(12px + env(safe-area-inset-bottom));}
+  #dz-start-card{width:min(92vw,340px);}
+}
+
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
@@ -123,7 +185,8 @@ body {
 		</noscript>
 
 		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="yate_splash.jpg" alt="YATE FREE ROAM — rainy Yate Shopping Centre with Tesco, M&S and a black-and-white cat">
+			<div id="dz-loading-caption" aria-live="polite">LOADING YATE FREE ROAM…</div>
 			<progress id="status-progress"></progress>
 			<div id="status-notice"></div>
 		</div>
@@ -160,6 +223,7 @@ const engine = new Engine(GODOT_CONFIG);
 function launchGodotEngine() {
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
+	const loadingCaption = document.getElementById('dz-loading-caption');
 	const statusNotice = document.getElementById('status-notice');
 
 	let initializing = true;
@@ -176,6 +240,7 @@ function launchGodotEngine() {
 		}
 		statusOverlay.style.visibility = 'visible';
 		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		loadingCaption.style.display = mode === 'progress' ? 'block' : 'none';
 		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
 		statusMode = mode;
 	}
