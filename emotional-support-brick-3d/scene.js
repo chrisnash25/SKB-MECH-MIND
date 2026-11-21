@@ -7,7 +7,7 @@ import { createActivities } from './activities.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
 const camera=new T.PerspectiveCamera(50,innerWidth/innerHeight,.1,80);
 const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true,preserveDrawingBuffer:new URLSearchParams(location.search).has('capture')});
-renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
+renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,Math.min(innerWidth,innerHeight)<650?1.35:1.75));
 renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.24;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
 scene.add(new T.HemisphereLight('#fff6e7','#837467',1.75));
@@ -23,7 +23,7 @@ const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(2,2
 const woodMap=woodTexture('#916246'),beamMap=woodTexture('#503a2d');
 const wood=mat('#ffffff',.79,{map:woodMap,bumpMap:woodMap,bumpScale:.012});
 const beam=mat('#ffffff',.92,{map:beamMap,bumpMap:beamMap,bumpScale:.014});
-const wall=mat('#a58a76',.94),stone=mat('#975b45');
+const wall=mat('#b8aa96',.94),stone=mat('#975b45');
 const fabricMap=linenTexture('#7f7477'),rugMap=linenTexture('#b9a68c');
 const sofa=mat('#ffffff',.99,{map:fabricMap,bumpMap:fabricMap,bumpScale:.006});
 const cream=mat('#ffffff',1,{map:rugMap,bumpMap:rugMap,bumpScale:.01});
@@ -37,7 +37,7 @@ block(scene,.22,7.3,13,wall,7.4,3.5,-.9);
 // Four instanced masonry materials: 4 draw calls instead of hundreds.
 const colors=['#a05f49','#945542','#8b5140','#b06a52'];
 const brickMaterials=colors.map(c=>{const map=masonryTexture(c);return mat('#ffffff',.99,{map,bumpMap:map,bumpScale:.025})});
-const batches=colors.map((color,i)=>new T.InstancedMesh(new T.BoxGeometry(.47,.2,.12),brickMaterials[i],240));
+const batches=colors.map((color,i)=>new T.InstancedMesh(new T.BoxGeometry(.47,.2,.12),brickMaterials[i],300));
 const counts=[0,0,0,0],pose=new T.Object3D();
 for(let row=0;row<30;row++)for(let col=0;col<30;col++){
 const x=-7.1+col*.49+(row%2)*.2,y=.18+row*.225;
@@ -46,7 +46,22 @@ const index=(row+col)%4;
 pose.position.set(x,y,-7.35);pose.updateMatrix();
 batches[index].setMatrixAt(counts[index]++,pose.matrix);
 }
-batches.forEach((batch,i)=>{batch.count=counts[i];batch.receiveShadow=true;batch.instanceMatrix.needsUpdate=true;scene.add(batch)});
+batches.forEach((batch,i)=>{batch.count=counts[i];batch.receiveShadow=true;batch.instanceMatrix.needsUpdate=true;/* Retain brickwork as an optional feature wall, but default to calmer plaster. */batch.visible=false;scene.add(batch)});
+// Softer lived-in interior: natural timber trims, framed art, wainscoting and ceiling coves.
+const plaster=mat('#d6c5b2',.97),trim=mat('#e7d6bd',.9),frameMat=mat('#594638',.77),painting=mat('#8b9b83',.98),painting2=mat('#b68c75',.98);
+block(scene,14.7,.16,.18,trim,0,.18,-7.33);
+block(scene,14.7,.13,.18,trim,0,2.1,-7.33);
+block(scene,14.7,.14,.2,trim,0,6.92,-7.33);
+for(const x of [-6.8,-4.3,-1.8,.7])block(scene,.075,1.65,.14,trim,x,1.2,-7.29);
+for(const x of [-5.4,-3.5,-1.6,.3]){
+  block(scene,1.28,.9,.09,frameMat,x,4.48,-7.26);
+  block(scene,1.10,.72,.10,(x<-3?painting:painting2),x,4.48,-7.19);
+  block(scene,.72,.10,.11,trim,x,4.28,-7.1);
+}
+block(scene,14.4,.16,.19,trim,0,6.94,-7.27);
+block(scene,.12,6.9,12.6,trim,-7.2,3.4,-.9);
+block(scene,.12,6.9,12.6,trim,7.2,3.4,-.9);
+for(const x of [-5.7,-3.5,-1.3,1.0])block(scene,.05,1.25,.08,plaster,x,1.0,-7.21);
 const sky=document.createElement('canvas');sky.width=512;sky.height=512;const ctx=sky.getContext('2d');
 const grad=ctx.createLinearGradient(0,0,0,512);grad.addColorStop(0,'#8ca3b2');grad.addColorStop(.5,'#eac29f');grad.addColorStop(1,'#657b66');ctx.fillStyle=grad;ctx.fillRect(0,0,512,512);
 ctx.fillStyle='#fff2b8';ctx.beginPath();ctx.arc(355,260,40,0,Math.PI*2);ctx.fill();
@@ -64,9 +79,9 @@ for(let i=0;i<5;i++)block(scene,2.5,.11,.56,wood,-5.5,.5+i*.68,-6.75);
 for(const x of [-6.75,-4.25])block(scene,.13,3.4,.6,beam,x,1.78,-6.75);
 for(let row=0;row<4;row++)for(let i=0;i<11;i++){const x=-6.63+i*.2;block(scene,.13,.37+(i%3)*.06,.32,mat(['#847360','#ad8772','#64756b','#756d78'][i%4]),x,.76+row*.68,-6.7,.01)}
 const carpet=block(scene,5.5,.09,4.1,cream,-.2,.03,-.55,.12);
-const tuftGeom=new T.ConeGeometry(.008,.052,3),tuftMat=mat('#bfae92');const tufts=new T.InstancedMesh(tuftGeom,tuftMat,16000);
+const tuftGeom=new T.ConeGeometry(.008,.052,3),tuftMat=mat('#bfae92');const tufts=new T.InstancedMesh(tuftGeom,tuftMat,3800);
 const o=new T.Object3D();let s=19;const rnd=()=>((s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296);
-for(let i=0;i<16000;i++){o.position.set(-2.8+rnd()*5.3,.084,-2.55+rnd()*3.9);o.rotation.set((rnd()-.5)*.4,0,(rnd()-.5)*.4);o.updateMatrix();tufts.setMatrixAt(i,o.matrix)}scene.add(tufts);
+for(let i=0;i<3800;i++){o.position.set(-2.8+rnd()*5.3,.084,-2.55+rnd()*3.9);o.rotation.set((rnd()-.5)*.4,0,(rnd()-.5)*.4);o.updateMatrix();tufts.setMatrixAt(i,o.matrix)}scene.add(tufts);
 block(scene,2,.12,1.0,wood,-3.6,.7,-2,.04);
 for(const x of [-4.43,-2.77])for(const z of [-2.37,-1.63])block(scene,.1,.65,.1,beam,x,.33,z);
 const bag=ellipsoid(scene,1.3,.35,-1.25,1.13,.42,.97,mat('#605b61'));
@@ -165,19 +180,23 @@ stick.addEventListener('pointerdown',e=>{pointer=e.pointerId;stick.setPointerCap
 stick.addEventListener('pointermove',e=>{if(pointer===e.pointerId)moveStick(e)});
 function moveStick(e){const r=stick.getBoundingClientRect();joy.set(T.MathUtils.clamp((e.clientX-r.left-r.width/2)/44,-1,1),T.MathUtils.clamp((e.clientY-r.top-r.height/2)/44,-1,1));nub.style.transform='translate('+joy.x*32+'px,'+joy.y*32+'px)'}
 stick.addEventListener('pointerup',()=>{pointer=null;joy.set(0,0);nub.style.transform=''});
-function animateRig(c,time,isMoving){
-if(!c.rig||!c.rig.leftArm||!c.rig.rightArm||!c.rig.leftLeg||!c.rig.rightLeg)return;
-const step=time*9.5;
-const leftSwing=isMoving?Math.sin(step)*.55:Math.sin(time*1.1)*.045;
-const rightSwing=isMoving?-Math.sin(step)*.55:Math.sin(time*1.2+1.8)*.055;
-const wave=c===player&&performance.now()<c.waveUntil;
-c.rig.leftArm.rotation.x=leftSwing;
-c.rig.rightArm.rotation.x=rightSwing;
-c.rig.leftArm.rotation.z=Math.sin(time*.9)*.028;
-c.rig.rightArm.rotation.z=wave?.95+Math.sin(time*13)*.17:Math.sin(time*.85+2)*.035;
-c.rig.leftLeg.rotation.x=isMoving?Math.sin(step+Math.PI)*.43:0;
-c.rig.rightLeg.rotation.x=isMoving?Math.sin(step)*.43:0;
-if(c.rig.body)c.rig.body.rotation.z=Math.sin(time*.75)*.012;
+// Shoulder-safe locomotion: tiny arm swing and soft joint damping prevent the
+// whole brick silhouette from twisting like a stiff block while walking.
+function animateRig(c,time,isMoving,dt){
+ if(!c.rig)return;
+ const gait=Math.sin(time*6.8),settle=Math.min(1,dt*11);
+ const move=c.activity==='sleep'?0:isMoving?1:0;
+ const damp=(node,axis,value)=>{if(node)node.rotation[axis]=T.MathUtils.lerp(node.rotation[axis],value,settle)};
+ const left=c.rig.leftArm,right=c.rig.rightArm;
+ const waving=c===player&&performance.now()<c.waveUntil;
+ damp(left,'x',gait*.14*move);
+ damp(right,'x',-gait*.14*move);
+ damp(left,'z',move?-.035:-.015);
+ damp(right,'z',waving?-.72+Math.sin(time*8)*.11:(move?.035:.015));
+ damp(c.rig.leftLeg,'x',-gait*.24*move);
+ damp(c.rig.rightLeg,'x',gait*.24*move);
+ damp(c.rig.body,'z',gait*.007*move);
+ damp(c.rig.body,'y',0);
 }
 
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.06,(now-last)/1000);last=now;clock+=dt;
@@ -188,9 +207,9 @@ player.root.position.x=T.MathUtils.clamp(player.root.position.x,-6,6);player.roo
 player.root.rotation.y=T.MathUtils.lerp(player.root.rotation.y,Math.atan2(movement.x,movement.z),.14)}
 animateCharacter(player,clock,dt,active,now<speakingUntil);
 animateCharacter(buddy,clock+1.1,dt,false,false);
-animateRig(player,clock,active);animateRig(buddy,clock+1.1,false);
-if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*.063:Math.sin(clock*1.6)*.014;player.model3d.rotation.z=active?Math.sin(clock*9)*.025:Math.sin(clock*.6)*.012;}
-if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
+animateRig(player,clock,active,dt);animateRig(buddy,clock+1.1,false,dt);
+if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*6.8))*.024:Math.sin(clock*1.6)*.009;player.model3d.rotation.z=active?Math.sin(clock*6.8)*.008:Math.sin(clock*.6)*.004;}
+if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.008;buddy.model3d.rotation.z=Math.sin(clock*.7)*.006;}
 activities.tick(now,dt);
 const playMode=activities.getMode(),inGame=playMode==='jenga'||playMode==='stack'||playMode==='memory';
 if(buddy.model3d){
@@ -202,11 +221,11 @@ if(buddy.model3d){
 }
 if(player.model3d && now<speakingUntil && playMode!=='sleep'){
   player.model3d.rotation.x=Math.sin(clock*10)*.018;
-  if(player.rig?.body)player.rig.body.rotation.y=Math.sin(clock*2.2)*.015;
+  if(player.rig?.body)player.rig.body.rotation.y=Math.sin(clock*2.2)*.006;
 }else if(player.model3d){player.model3d.rotation.x*=.86}
 
-const target=inGame?new T.Vector3(1.4,playMode==='memory'?.40:1.15,.5):player.root.position.clone().add(new T.Vector3(0,1.05,0));
-const offset=inGame?new T.Vector3(Math.sin(yaw)*3.8,2.1+pitch*2.3,Math.cos(yaw)*3.8):new T.Vector3(Math.sin(yaw)*3.65,1.15+pitch*2.3,Math.cos(yaw)*3.65);
+const target=inGame?new T.Vector3(1.4,playMode==='memory'?.40:1.15,.5):player.root.position.clone().add(new T.Vector3(0,1.1,0));
+const offset=inGame?new T.Vector3(Math.sin(yaw)*3.8,2.1+pitch*2.3,Math.cos(yaw)*3.8):new T.Vector3(Math.sin(yaw)*4.55,1.38+pitch*2.3,Math.cos(yaw)*4.55);
 camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
