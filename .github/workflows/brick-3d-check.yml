@@ -74,8 +74,8 @@ jobs:
             game.stop();
             return {feed,sleep,dance,jenga,stack,memory,stats:game.getStats()};
           });
-          const voiceFiles=await Promise.all(['bricko-greeting.wav','rusty-greeting.mp3'].map(async n=>{
-            const res=await page.request.get('http://127.0.0.1:8765/emotional-support-brick-3d/audio/'+n);
+          const voiceFiles=await Promise.all(['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'].map(n=>n+'-hello.mp3').map(async n=>{
+            const res=await page.request.get('http://127.0.0.1:8765/emotional-support-brick-3d/audio/cast/'+n);
             return {name:n,status:res.status(),bytes:(await res.body()).length};
           }));
           console.log('INTERACTIVE FEATURES:',JSON.stringify(features));
