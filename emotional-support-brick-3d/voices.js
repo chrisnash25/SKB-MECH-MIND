@@ -15,6 +15,7 @@ export const VOICE_CAST={
 };
 
 // Recorded natural character greetings, with an accessible fallback for unscripted dialogue.
+const recordedGreetings={"bricko":"./audio/cast/bricko-hello.mp3","rusty":"./audio/cast/rusty-hello.mp3","pulse":"./audio/cast/pulse-hello.mp3","calm":"./audio/cast/calm-hello.mp3","spark":"./audio/cast/spark-hello.mp3","blocky":"./audio/cast/blocky-hello.mp3","cozy":"./audio/cast/cozy-hello.mp3","zapp":"./audio/cast/zapp-hello.mp3","echo":"./audio/cast/echo-hello.mp3","gizmo":"./audio/cast/gizmo-hello.mp3"};
 const recorded={
   cartoon:{hello:'./audio/bricko-greeting.wav'},
   realistic:{hello:'./audio/rusty-greeting.mp3'}
@@ -83,8 +84,8 @@ export function createVoices({getPlayer,onStart,onEnd}){
     const text=(key==='hello'?profile.hello:null)||(hasRecording?lines[legacy][key]:null)|| (key?varied(legacy,key):null)||lines[legacy]?.[key]||input;
     cancel();const myToken=token;
     onStart?.(text,Math.max(1300,text.length*75));spokenAt=performance.now();
-    const url=hasRecording?recorded[legacy]?.[key]:null;
-    if(url&&opts.recorded!==false&&key!=='hello'){
+    const url=key==='hello'&&opts.recorded!==false?recordedGreetings[who]:(hasRecording?recorded[legacy]?.[key]:null);
+    if(url&&opts.recorded!==false){
       const a=new Audio(url);audio=a;a.preload='auto';a.volume=.94;
       a.onended=()=>{if(token===myToken){audio=null;end()}};
       a.onerror=()=>{if(token===myToken){audio=null;synth(text,who,myToken)}};
