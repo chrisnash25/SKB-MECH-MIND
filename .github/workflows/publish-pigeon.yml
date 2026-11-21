@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download independent 3D game source
         env:
-          SOURCE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-e778-8210-9233-453a82f1bde3/raw?se=2026-11-21T01%3A29%3A59Z&sp=r&sv=2026-06-06&sr=b&scid=d44d5ffa-45d8-552e-9b47-63dceed7bf63&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T08%3A13%3A49Z&ske=2026-11-21T08%3A13%3A49Z&sks=b&skv=2026-06-06&sig=LlbjkHy3UuhwS/5SBZ44mD3Y4vZX7m6HpY0pfv6THCk%3D'
+          SOURCE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-4454-81f4-99ec-49560d5e5738/raw?se=2026-11-21T01%3A33%3A31Z&sp=r&sv=2026-06-06&sr=b&scid=0080ff80-ed8e-58f6-84f1-437b34b0e432&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T04%3A07%3A29Z&ske=2026-11-21T04%3A07%3A29Z&sks=b&skv=2026-06-06&sig=Fo4oG0xKUhsAhCUNNDHnlvAkjhttusq3EQE4J8SHA%2BM%3D'
         run: |
           set -e
           curl -fLsS --retry 4 "$SOURCE_URL" -o /tmp/pigeon.zip
-          echo '84729d2f74cedf0b41c1aedf240f21642ced7d986bc777124052a24601cef362  /tmp/pigeon.zip' | sha256sum -c -
+          echo '9c163e9a39c5342498e3b173ab12501d2a3c2ed425b8223f73bd48433d87f5ec  /tmp/pigeon.zip' | sha256sum -c -
           mkdir -p /tmp/pigeon-game
           unzip -q /tmp/pigeon.zip -d /tmp/pigeon-game
           for f in project.godot scenes/main.tscn scripts/game.gd scripts/map_view.gd tests/smoke.gd audio/flap.wav audio/splat.wav audio/chip.wav; do test -s "/tmp/pigeon-game/$f"; done
@@ -75,7 +75,7 @@ jobs:
           cp -a /tmp/pigeon-web/. pigeon/
           cp /tmp/pigeon.zip pigeon/source.zip
           cp /tmp/pigeon-game/README.md pigeon/README.md
-          printf 'Grand Theft Pigeon: Shit Happens — Bristol-inspired 3D open-world prototype, 21 November 2026. 35 pedestrians, 12 cars, 24 chip pickups, flying pigeon, poop projectiles, map, menu, Xbox controls. SHA256 84729d2f74cedf0b41c1aedf240f21642ced7d986bc777124052a24601cef362.\n' > pigeon/BUILD_INFO.txt
+          printf 'Grand Theft Pigeon: Shit Happens — Bristol-inspired 3D open-world prototype, 21 November 2026. 35 pedestrians, 12 cars, 24 chip pickups, flying pigeon, poop projectiles, map, menu, Xbox controls. SHA256 9c163e9a39c5342498e3b173ab12501d2a3c2ed425b8223f73bd48433d87f5ec.\n' > pigeon/BUILD_INFO.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A pigeon/
