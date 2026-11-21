@@ -19,7 +19,7 @@ jobs:
           python3 -c "assert open('BrickoSam.glb','rb').read(4)==b'glTF'"
       - name: Create articulated character GLBs without texture loss
         run: |
-          python3 -m pip install --disable-pip-version-check --quiet trimesh numpy pillow
+          python3 -m pip install --disable-pip-version-check --quiet trimesh numpy pillow networkx
           mkdir -p emotional-support-brick-3d/assets
           python3 emotional-support-brick-3d/rigify.py BrickoSam.glb emotional-support-brick-3d/assets/bricko.glb
           python3 emotional-support-brick-3d/rigify.py RustySam.glb emotional-support-brick-3d/assets/rusty.glb
