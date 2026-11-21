@@ -5,6 +5,8 @@ on:
       - 'emotional-support-brick-3d/**'
       - '.github/workflows/brick-3d-check.yml'
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   browser:
     runs-on: ubuntu-latest
@@ -55,3 +57,15 @@ jobs:
         with:
           name: brick-3d-browser-smoke
           path: brick-*.png
+      - name: Record smoke test result
+        if: always()
+        env:
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          mkdir -p .build-reports
+          printf '{"result":"%s","run_id":"%s","source_commit":"%s"}\n' "$JOB_RESULT" "$GITHUB_RUN_ID" "$GITHUB_SHA" > .build-reports/brick-3d.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .build-reports/brick-3d.json
+          git commit -m "Record Brick 3D browser smoke status" || true
+          git push || true
