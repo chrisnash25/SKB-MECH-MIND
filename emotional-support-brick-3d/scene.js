@@ -188,6 +188,18 @@ if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*
 if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
 activities.tick(now,dt);
 const playMode=activities.getMode(),inGame=playMode==='jenga'||playMode==='stack'||playMode==='memory';
+if(buddy.model3d){
+  if(playMode==='dance'){
+    buddy.model3d.position.y=Math.abs(Math.sin(clock*3.6+1))*.11;
+    buddy.model3d.rotation.z=Math.sin(clock*3.8+1)*.10;
+    if(buddy.rig){for(const name of ['leftArm','rightArm'])if(buddy.rig[name])buddy.rig[name].rotation.z=(name==='leftArm'?1:-1)*(.55+Math.sin(clock*4)*.23)}
+  }else if(inGame){buddy.model3d.rotation.y=Math.sin(clock*.85)*.09;}
+}
+if(player.model3d && now<speakingUntil && playMode!=='sleep'){
+  player.model3d.rotation.x=Math.sin(clock*10)*.018;
+  if(player.rig?.body)player.rig.body.rotation.y=Math.sin(clock*2.2)*.015;
+}else if(player.model3d){player.model3d.rotation.x*=.86}
+
 const target=inGame?new T.Vector3(1.4,playMode==='memory'?.40:1.15,.5):player.root.position.clone().add(new T.Vector3(0,1.05,0));
 const offset=inGame?new T.Vector3(Math.sin(yaw)*3.8,2.1+pitch*2.3,Math.cos(yaw)*3.8):new T.Vector3(Math.sin(yaw)*3.65,1.15+pitch*2.3,Math.cos(yaw)*3.65);
 camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
