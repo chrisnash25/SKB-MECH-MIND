@@ -42,13 +42,14 @@ geo.computeVertexNormals();
 const brick=object(body,geo,red,0,1.2,0);
 if(real){for(let i=0;i<130;i++){const px=(random()-.5)*1.5,py=.72+random()*.96;
 ellipsoid(body,px,py,.353,.007+random()*.022,.01+random()*.018,.005,mat(random()>.5?'#80432f':'#c88059'));}}
-const eyes=[],arms=[],legs=[];
+const eyes=[],pupils=[],arms=[],legs=[];
 for(const a of [-1,1]){
 const eye=new T.Group();body.add(eye);eye.position.set(a*.44,1.35,.315);eyes.push(eye);
 ellipsoid(eye,0,0,0,.195,.21,.065,white);
-ellipsoid(eye,a*.025,-.006,.056,.124,.144,.036,iris);
-ellipsoid(eye,a*.024,-.01,.084,.093,.113,.028,black);
-ellipsoid(eye,-.033,.052,.109,.042,.044,.012,white);
+const pupil=new T.Group();eye.add(pupil);pupils.push(pupil);
+ellipsoid(pupil,a*.025,-.006,.056,.124,.144,.036,iris);
+ellipsoid(pupil,a*.024,-.01,.084,.093,.113,.028,black);
+ellipsoid(pupil,-.033,.052,.109,.042,.044,.012,white);
 tube(body,[[a*.29,1.7,.37],[a*.42,1.735,.4],[a*.57,1.69,.37]],.026,black);
 ellipsoid(body,a*.69,1.07,.344,.128,.07,.013,pink);
 const arm=new T.Group();arm.position.set(a*.84,1.25,0);body.add(arm);arms.push(arm);
@@ -70,17 +71,20 @@ const shape=new T.Shape();shape.moveTo(-.16,.10);shape.bezierCurveTo(-.2,-.13,-.
 object(mouth,new T.ShapeGeometry(shape,20),mouthmat,0,0,.03);
 ellipsoid(mouth,0,-.16,.04,.09,.04,.008,mat('#ed8589'));
 const shadow=object(root,new T.CircleGeometry(.81,32),new T.MeshBasicMaterial({color:'#22201d',transparent:true,opacity:.16,depthWrite:false}),0,.025,0);shadow.rotation.x=-Math.PI/2;
-return {root,body,eyes,arms,legs,mouth,real,step:0};
+return {root,body,eyes,pupils,arms,legs,mouth,real,step:0};
 }
 export function animateCharacter(c,t,dt,walking=false,talking=false){
-c.step+=dt*(walking?9:1.5);const s=c.step;
-c.body.position.y=walking?Math.abs(Math.sin(s))*.08:Math.sin(t*1.5)*.016;
-c.body.rotation.z=walking?Math.sin(s)*.025:Math.sin(t*.72)*.009;
+c.step+=dt*(walking?6.8:1.5);const s=c.step;
+c.body.position.y=walking?Math.abs(Math.sin(s))*.028:Math.sin(t*1.5)*.009;
+c.body.rotation.z=walking?Math.sin(s)*.009:Math.sin(t*.72)*.004;
 for(let i=0;i<2;i++){
-c.legs[i].rotation.x=c.seated?-1.08:(walking?Math.sin(s+i*Math.PI)*.48:0);
-c.arms[i].rotation.x=c.seated?-.30:(walking?Math.sin(s+i*Math.PI+Math.PI)*.4:Math.sin(t*1.2+i)*.04);
+c.legs[i].rotation.x=T.MathUtils.damp(c.legs[i].rotation.x,c.seated?-1.08:(walking?Math.sin(s+i*Math.PI)*.31:0),11,dt);
+c.arms[i].rotation.x=T.MathUtils.damp(c.arms[i].rotation.x,c.seated?-.30:(walking?Math.sin(s+i*Math.PI+Math.PI)*.15:Math.sin(t*1.2+i)*.025),11,dt);
 }
 const blink=(t%4.6>3.92&&t%4.6<4.05)?.10:1;
-for(const eye of c.eyes)eye.scale.y=T.MathUtils.lerp(eye.scale.y,blink,.28);
-c.mouth.scale.y=T.MathUtils.lerp(c.mouth.scale.y,talking?(Math.sin(t*17)**2)*.8+.55:1,.22);
+for(const eye of c.eyes)eye.scale.y=T.MathUtils.damp(eye.scale.y,blink,18,dt);
+// A shared, occasional glance makes the eyes feel alive without constant darting.
+const gazeX=Math.sin(t*.72+Math.sin(t*.19))*.055,gazeY=Math.sin(t*.48)*.023;
+for(const pupil of c.pupils||[]){pupil.position.x=T.MathUtils.damp(pupil.position.x,gazeX,4,dt);pupil.position.y=T.MathUtils.damp(pupil.position.y,gazeY,4,dt)}
+c.mouth.scale.y=T.MathUtils.damp(c.mouth.scale.y,talking?.55+Math.abs(Math.sin(t*12.8))*.8:.8,14,dt);
 }
