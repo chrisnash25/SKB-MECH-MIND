@@ -37,6 +37,12 @@ assert.ok(d.querySelector('#stepInput'),'Next-step planning available');
 d.querySelector('#stepInput').value='Ask a friend to chat';
 d.querySelector('#stepDone').click();
 assert.equal(d.querySelector('#activity').hidden,true);
+d.querySelector('#guided').click();
+assert.equal(q.getGuidedStep(),0,'Guided emotional support starts');
+for(let i=0;i<5;i++){d.querySelector('#message').value=['I feel nervous','Work was hard','I want someone to listen','Maybe a phone call','A break'][i];q.reply()}
+assert.equal(q.getGuidedStep(),-1,'Guided conversation finishes safely');
+d.querySelector('#message').value='I want to hurt myself';q.reply();
+assert.equal(d.querySelector('#urgent').hidden,false,'Crisis escalation still works within guided support');
 assert.match(d.querySelector('#chat').textContent,/Ask a friend to chat/);
 dom.window.close();
 console.log('EMOTIONAL SUPPORT CHECKS PASS: dialogue, mood, jokes, crisis links, character swap, tools');
