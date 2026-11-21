@@ -26,6 +26,13 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
 @media(pointer:coarse){#stick{display:block}#help{display:none}}
 @media(max-width:690px){#title strong{font-size:19px}#title small{font-size:12px}#selector{top:83px;flex-direction:column;gap:5px}#selector button{font-size:12px;padding:8px}#status{display:none}#speech{top:15%;left:58%;max-width:49vw;font-size:12px;padding:8px}#player{bottom:15px;left:8px;font-size:12px;padding:6px}#bottom{bottom:13px;left:auto;right:8px;transform:none;max-width:70%;gap:5px}#bottom button{font-size:12px;min-width:unset;padding:8px 9px}#chat{bottom:83px} }
 #supportLaunch{position:absolute;left:18px;top:153px;pointer-events:auto;display:inline-block;padding:9px 13px;background:#e7d4b7;color:#35271e;text-decoration:none;border:1px solid #977b63;border-radius:9px;font:700 13px system-ui;box-shadow:0 2px 8px #2118}@media(max-width:690px){#supportLaunch{left:12px;top:172px;padding:7px 10px;font-size:12px}}
+#helpToggle{position:absolute;right:13px;top:68px;pointer-events:auto;border-radius:50%;width:40px;height:40px;padding:0;font-size:21px;background:#f1dfc8}
+#helpPanel{position:absolute;right:13px;top:116px;max-width:min(350px,calc(100vw - 26px));background:#f3e9d9;color:#33271f;border:1px solid #ac9074;border-radius:13px;box-shadow:0 10px 30px #0008;padding:16px;pointer-events:auto;line-height:1.5}
+#helpPanel[hidden]{display:none}#helpPanel h2{margin:0;font:700 23px Georgia,serif}#helpPanel p{font-size:14px;margin:10px 0}#helpClose{float:right;padding:3px 9px;font-size:18px}
+#selector button[aria-pressed="true"]{background:#f9eddb;border:2px solid #a77950;box-shadow:0 0 0 2px #392a1c70}
+#bottom button{min-width:70px}#title strong{font-size:clamp(19px,2vw,28px)}
+@media(max-width:690px){#title{left:12px;top:11px}#title strong{font-size:17px}#title small{font-size:11px}#selector{top:73px;flex-direction:row;left:10px;gap:4px}#selector button{font-size:11px;padding:7px}#supportLaunch{top:118px;left:10px}#helpToggle{top:11px;right:10px;width:34px;height:34px}#helpPanel{top:53px;z-index:10}#bottom{bottom:12px;right:6px;gap:4px}#bottom button{padding:9px 7px;font-size:12px}#speech{top:25%;left:50%;max-width:64vw}#player{bottom:153px;left:7px}#chat{bottom:67px}}
+@media(max-width:360px){#bottom button{font-size:11px;padding:7px 5px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body>
@@ -34,18 +41,25 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
  <header id="title"><strong>Emotional Support<br>Brick Game</strong><small>Together We're Stronger!</small></header>
  <div id="selector"><button id="cartoon">Cartoon Brick</button><button id="realistic">Realistic Brick</button></div>
  <a id="supportLaunch" href="./support.html" aria-label="Open dedicated emotional support page">Emotional Support</a>
- <div id="status">LIVE 3D · WORK-IN-PROGRESS ART PASS</div>
+ <div id="status">3D Lounge</div>
  <div id="speech">Welcome home. Fancy a chat?</div>
  <div id="player">Playing as <strong id="name">Bricko</strong></div>
- <div id="help">WASD / Arrows: move · Drag: look · E: interact</div>
+ <div id="help">Move: WASD / arrows · Look: drag · Talk: button below</div>
  <div id="stick"><div id="nub"></div></div>
  <div id="chat" hidden><input id="chatInput" type="text" maxlength="200" placeholder="Talk to your brick..." aria-label="Talk to your brick"><button id="send">Send</button></div>
- <nav id="bottom"><button id="chatButton">Talk</button><button id="jokeButton">Joke</button><button id="mic">Microphone</button><button id="interact">Interact</button></nav>
- <div id="load">Loading your 3D lounge…</div>
+ <nav id="bottom" aria-label="Main game actions"><button id="chatButton">Talk</button><button id="jokeButton">Joke</button><button id="mic">Speak</button><button id="interact">Wave</button></nav>
+ <div id="load" role="status">Loading your 3D lounge…</div>
+ <button id="helpToggle" aria-label="How to play" title="How to play">?</button><section id="helpPanel" hidden role="dialog" aria-labelledby="helpTitle"><button id="helpClose" aria-label="Close help">×</button><h2 id="helpTitle">How to play</h2><p>Choose Bricko or Rusty, then move around your room. On a phone, use the round movement pad and drag the room to look around. On a keyboard, use WASD or the arrow keys.</p><p>Tap <strong>Talk</strong> to type, <strong>Speak</strong> to try your microphone, or <strong>Wave</strong> to greet your brick. Open <strong>Activities</strong> for feeding, sleeping, dancing and games. <strong>Emotional Support</strong> opens a separate calming conversation page.</p><button id="helpDone">Got it</button></section>
 </div>
 <script type="module">
 window.addEventListener('error',e=>{const box=document.getElementById('load');if(box)box.textContent='Game load error: '+e.message;});
 import './scene.js';
 document.getElementById('load').remove();
+const panel=document.getElementById('helpPanel');
+const closeHelp=()=>{panel.hidden=true;document.getElementById('helpToggle').focus()};
+document.getElementById('helpToggle').onclick=()=>panel.hidden=!panel.hidden;
+document.getElementById('helpClose').onclick=closeHelp;
+document.getElementById('helpDone').onclick=closeHelp;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closeHelp()});
 </script>
 </body></html>
