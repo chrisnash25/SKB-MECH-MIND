@@ -42,7 +42,7 @@ jobs:
           await page.waitForTimeout(6500);
           const state=await page.evaluate(()=>{
           const c=document.querySelector('#world');
-          return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0,models:window.__brickModelStatus||{}};
+          return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0,models:window.__brickModelStatus||{},cast:[...document.querySelectorAll('[data-brick-id]')].map(b=>b.dataset.brickId)};
           });
           console.log('INITIAL RENDER:',JSON.stringify({state,errors}));
           async function saveCanvas(filename){
@@ -82,7 +82,7 @@ jobs:
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
-          if(Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.models.cartoon?.loaded||!state.models.realistic?.loaded||state.models.cartoon.meshes!==5||state.models.realistic.meshes!==5||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
