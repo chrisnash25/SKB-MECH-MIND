@@ -79,6 +79,33 @@ def make(name,color,style):
   bone(side+'Leg',(sign*.39,0,.68),(sign*.39,0,.17),'body')
  bpy.ops.object.mode_set(mode='OBJECT')
  for obj,b in objs:bind(obj,arm,b)
+ # Export distinct animation clips for the armature. Three.js can play these
+ # directly, while the runtime also supports procedural bone movement.
+ bpy.context.view_layer.objects.active=arm
+ bpy.ops.object.mode_set(mode='POSE')
+ bones=arm.pose.bones
+ def clip(label,frames,poses):
+  action=bpy.data.actions.new(name+'_'+label)
+  arm.animation_data_create();arm.animation_data.action=action
+  for frame in frames:
+   for bname in ['body','leftArm','rightArm','leftLeg','rightLeg']:
+    bone=bones[bname];bone.rotation_mode='XYZ'
+    bone.rotation_euler=poses.get(frame,{}).get(bname,(0,0,0))
+    bone.keyframe_insert(data_path='rotation_euler',frame=frame,group=bname)
+  for fc in action.fcurves:
+   for kp in fc.keyframe_points:kp.interpolation='BEZIER'
+  track=arm.animation_data.nla_tracks.new();track.name=label
+  strip=track.strips.new(label,frames[0],action);strip.action_frame_start=frames[0];strip.action_frame_end=frames[-1]
+  arm.animation_data.action=None
+ clip('idle',[1,25,49],{25:{'body':(0,0,.012)},49:{}})
+ clip('walk',[1,9,17,25],{
+  1:{'leftArm':(.24,0,0),'rightArm':(-.24,0,0),'leftLeg':(-.34,0,0),'rightLeg':(.34,0,0)},
+  9:{'leftArm':(-.24,0,0),'rightArm':(.24,0,0),'leftLeg':(.34,0,0),'rightLeg':(-.34,0,0)},
+  17:{'leftArm':(.24,0,0),'rightArm':(-.24,0,0),'leftLeg':(-.34,0,0),'rightLeg':(.34,0,0)},
+  25:{'leftArm':(.24,0,0),'rightArm':(-.24,0,0),'leftLeg':(-.34,0,0),'rightLeg':(.34,0,0)}})
+ clip('wave',[1,10,20,30,40],{
+  1:{},10:{'rightArm':(0,0,-1.15)},20:{'rightArm':(0,0,-.85)},30:{'rightArm':(0,0,-1.15)},40:{}})
+ bpy.ops.object.mode_set(mode='OBJECT')
  bpy.context.view_layer.objects.active=arm
  for obj in bpy.context.selected_objects:obj.select_set(False)
  arm.select_set(True)
