@@ -14,11 +14,11 @@ a{color:#50362a}button{border:1px solid #a58a6b;background:#e7d2b5;border-radius
 <div id="chat" role="log" aria-live="polite" aria-label="Your support conversation"></div>
 <div id="urgent" hidden role="alert"></div>
 <div id="quick" aria-label="Conversation suggestions"></div>
-<form id="editor"><textarea id="message" rows="2" maxlength="700" placeholder="Tell your brick how you feel…" aria-label="Message"></textarea><button type="submit">Send</button></form>
+<form id="editor"><textarea id="message" rows="2" maxlength="700" placeholder="Tell your brick how you feel…" aria-label="Message"></textarea><button type="button" id="supportMic" title="Optional microphone">Speak</button><button type="submit">Send</button></form>
 <h2>Take care of yourself</h2>
-<div id="tools"><button id="breathe">Slow breathing</button><button id="ground">5–4–3–2–1 grounding</button><button id="step">One small step</button><button id="clear">Clear chat</button></div>
+<div id="tools"><button id="guided">Guided check-in</button><button id="breathe">Slow breathing</button><button id="ground">5–4–3–2–1 grounding</button><button id="step">One small step</button><button id="clear">Clear chat</button></div>
 <div id="activity" hidden></div>
-<footer>Your typed conversation stays on this page and is not sent to a chatbot server or saved as chat history. The optional browser voice may sound synthetic. If something is serious or ongoing, consider speaking with a trusted adult, GP or qualified professional.</footer>
+<footer>Your typed conversation stays on this page and is not sent to a chatbot server or saved as chat history. The optional browser voice may sound synthetic; microphone recognition may use your browser provider. If something is serious or ongoing, consider speaking with a trusted adult, GP or qualified professional.</footer>
 </article></main>
 <script>
 const p=new URLSearchParams(location.search);let rusty=p.get('brick')==='rusty'||sessionStorage.getItem('esb-character')==='rusty';
@@ -68,8 +68,34 @@ function crisis(text){const immediate=imminent.test(text);urgent.hidden=false;ur
 answer(immediate?"I'm worried you may be in danger. Please contact emergency help or someone safe near you right now.":"Thank you for telling me. Your safety matters. I can listen, but I can't provide crisis care. Please reach out to a trusted person or professional service.",false);
 options([['Help me ask someone',()=>answer("You could say: I'm not feeling safe and I need support right now.",false)],['Show support details',()=>urgent.hidden=false]])}
 function classify(s){const rules=[['grief',/\b(grief|grieving|died|death|passed away|lost my (mum|dad|friend|pet))\b/i],['lonely',/\b(lonely|alone|isolat|left out|no friends)\b/i],['anger',/\b(angry|furious|rage|annoyed|frustrat|argument)\b/i],['worry',/\b(anxi\w*|panic\w*|worried|worry\w*|scared|afraid|stress\w*|overthink\w*|nervous\w*|overwhelm\w*)\b/i],['sad',/\b(sad|down|depress\w*|upset|cry\w*|miserable|heartbroken|hopeless)\b/i],['tired',/\b(tired|exhaust|burnout|no energy)\b/i],['confidence',/\b(fail|useless|worthless|can't do|embarrass|confiden)\b/i],['happy',/\b(happy|excited|great|wonderful|good news|proud|grateful)\b/i]];for(const [k,p] of rules)if(p.test(s))return k;return 'general'}
+const guidedQuestions=[
+"What feeling is strongest for you right now?",
+"Can you tell me a little about what happened or what's been difficult?",
+"What would you want a trusted person to understand about this?",
+"Would practical help, a break, someone to talk to or something else make today easier?",
+"What is one small, gentle next step you could take? Resting counts."
+];
+let guidedStep=-1;
+function guidedStart(){stop();guidedStep=0;answer("We can talk this through, one question at a time. You can stop at any point. "+guidedQuestions[0],false);options([['Stop guided chat',()=>{guidedStep=-1;initial()}]])}
+function guidedNext(message){
+const bridges=[
+"Thanks for naming that feeling. ",
+"I hear you. That sounds important. ",
+"It can take courage to say what matters to you. ",
+"Support can take different forms. "
+];
+guidedStep++;
+if(guidedStep>=guidedQuestions.length){
+ guidedStep=-1;answer("Thank you for sharing this with me. You don't have to solve everything today. Remember that a trusted person or professional can help with ongoing difficulties. Would you like to try a calming exercise, or keep chatting?",false);
+ options([['Talk more',initial],['Slow breathing',breathing],['One small step',plan]]);
+}else{
+ answer((bridges[guidedStep-1]||"Thank you for sharing. ")+guidedQuestions[guidedStep],false);
+ options([['Stop guided chat',()=>{guidedStep=-1;initial()}]]);
+}
+}
 function reply(){const message=field.value.trim().slice(0,700);if(!message)return;line('You',message);field.value='';urgent.hidden=true;
-if(risk.test(message)){crisis(message);return}
+if(risk.test(message)){guidedStep=-1;crisis(message);return}
+if(guidedStep>=0){guidedNext(message);return}
 if(/\b(joke|laugh|funny)\b/i.test(message)){joke();return}
 if(/\b(breath|calm me)\b/i.test(message)){breathing();return}
 const type=classify(message);answer(pick(sets[rusty?'rusty':'bricko'][type]));
@@ -79,11 +105,13 @@ function breathing(){stop();active='breath';const start=performance.now();activi
 function frame(t){if(active!=='breath')return;const elapsed=(t-start)/1000;$('cue').textContent=elapsed%10<4?'Gently breathe in · 4 seconds':'Slowly breathe out · 6 seconds';if(elapsed>60){stop();answer("That was a calming minute. What's on your mind now?");return}raf=requestAnimationFrame(frame)}raf=requestAnimationFrame(frame)}
 function grounding(){stop();active='ground';activity.hidden=false;const steps=['Notice 5 things you can see.','Notice 4 things you can feel.','Notice 3 sounds you can hear.','Notice 2 smells, if possible.','Notice 1 taste or one slow breath.'];let n=0;activity.innerHTML="<strong>5–4–3–2–1 grounding</strong><p id='cue'></p><button id='next'>Next</button><button id='stopExercise'>Finish</button>";$('cue').textContent=steps[0];$('next').onclick=()=>{n++;if(n>=steps.length){stop();answer("You gave yourself a moment to reconnect with the present.")}else $('cue').textContent=steps[n]};$('stopExercise').onclick=stop}
 function plan(){stop();active='plan';activity.hidden=false;activity.innerHTML="<strong>One manageable step</strong><p>What is one small, kind thing you could do next?</p><input id='stepInput' maxlength='130' style='width:100%;padding:8px' placeholder='e.g. text a trusted person'><button id='stepDone'>That's my step</button><button id='stopExercise'>Cancel</button>";$('stepDone').onclick=()=>{const t=$('stepInput').value.trim();if(t){stop();answer("One small step: "+t+". You can take it at your own pace.")}};$('stopExercise').onclick=stop}
-function reset(){chat.replaceChildren();urgent.hidden=true;used=[];stop();answer(pick(sets[rusty?'rusty':'bricko'].welcome),false);initial()}
+function reset(){chat.replaceChildren();urgent.hidden=true;used=[];guidedStep=-1;stop();answer(pick(sets[rusty?'rusty':'bricko'].welcome),false);initial()}
 $('switch').onclick=()=>{rusty=!rusty;sessionStorage.setItem('esb-character',rusty?'rusty':'bricko');window.dispatchEvent(new CustomEvent('brickchange',{detail:{rusty}}));$('name').textContent=speaker();reset()};
 $('editor').addEventListener('submit',e=>{e.preventDefault();reply()});
 field.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();reply()}});
+$('guided').onclick=guidedStart;
+$('supportMic').onclick=()=>{const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){answer('Microphone recognition is unavailable here. You can still type.',false);return}const rec=new R();rec.lang='en-GB';rec.onresult=e=>{field.value=e.results[0][0].transcript;reply()};rec.onerror=()=>answer('I could not hear that clearly. Try typing instead.',false);try{rec.start()}catch(e){answer('Please allow microphone access in your browser if you want to speak.',false)}};
 $('breathe').onclick=breathing;$('ground').onclick=grounding;$('step').onclick=plan;$('clear').onclick=reset;
 $('name').textContent=speaker();reset();
-window.__supportQA={classify,crisis,reply,risk,mood,joke,reset,getMessageCount:()=>chat.children.length};
+window.__supportQA={classify,crisis,reply,risk,mood,joke,reset,guidedStart,getGuidedStep:()=>guidedStep,getMessageCount:()=>chat.children.length};
 </script><script type="module" src="./support-avatar.js"></script></body></html>
