@@ -158,7 +158,7 @@ const wave=c===player&&performance.now()<c.waveUntil;
 c.rig.leftArm.rotation.x=leftSwing;
 c.rig.rightArm.rotation.x=rightSwing;
 c.rig.leftArm.rotation.z=Math.sin(time*.9)*.028;
-c.rig.rightArm.rotation.z=wave?-.85+Math.sin(time*13)*.22:Math.sin(time*.85+2)*.035;
+c.rig.rightArm.rotation.z=wave?.95+Math.sin(time*13)*.17:Math.sin(time*.85+2)*.035;
 c.rig.leftLeg.rotation.x=isMoving?Math.sin(step+Math.PI)*.43:0;
 c.rig.rightLeg.rotation.x=isMoving?Math.sin(step)*.43:0;
 if(c.rig.body)c.rig.body.rotation.z=Math.sin(time*.75)*.012;
