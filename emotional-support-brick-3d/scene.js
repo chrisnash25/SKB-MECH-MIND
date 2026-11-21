@@ -3,6 +3,7 @@ import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js'
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
 import { woodTexture,masonryTexture,linenTexture } from './surface-textures.js';
 import { createVoices } from './voices.js';
+import { createConversation } from './conversation.js';
 import { createActivities } from './activities.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
 const camera=new T.PerspectiveCamera(50,innerWidth/innerHeight,.1,80);
@@ -144,6 +145,7 @@ let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingU
 camera.position.set(-.6,2.40,4.75);camera.lookAt(-.6,1.05,1.1);
 const keys={},joy=new T.Vector2(),world=document.getElementById('world'),bubble=document.getElementById('speech');
 const voiceSystem=createVoices({getPlayer:()=>player,onStart:(text,duration)=>{bubble.textContent=text;speakingUntil=performance.now()+duration;},onEnd:()=>{speakingUntil=0}});
+const conversation=createConversation();
 function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
@@ -161,7 +163,7 @@ if(/joke|funny|make me laugh/.test(q)){say('joke',{key:'joke'});return}
 if(/what can we talk about|what should we talk about|have a chat/.test(q)){say('talk',{key:'talk'});return}
 if(/nice work|well done|good job|i won/.test(q)){say('cheer',{key:'cheer'});return}
 if(/i lost|i failed|that was bad/.test(q)){say('oops',{key:'oops'});return}
-const answer=/joke|funny/.test(q)?"I went to a party last night. I was the cornerstone of the conversation.":/sad|lonely|upset/.test(q)?"I'm sorry. Want to tell me about it, or shall we play something together?":/name|who are you/.test(q)?(player.real?"I'm Rusty, a well-weathered brick with a surprisingly big heart.":"I'm Bricko, the friendliest brick in the building!"):/hello|hey|hi/.test(q)?"Hello again! Shall we have some fun?":/how are you/.test(q)?"Quite solid, thanks for asking. That's brick humour for you.":"I heard you say "+text+". We could try a game, a dance or a biscuit.";say(answer)}
+const answer=conversation.reply(text,player.real);say(answer)}
 document.getElementById('cartoon').setAttribute('aria-pressed','true');document.getElementById('realistic').setAttribute('aria-pressed','false');
 document.getElementById('cartoon').onclick=()=>select(false);
 document.getElementById('realistic').onclick=()=>select(true);
@@ -170,7 +172,7 @@ document.getElementById('chatButton').onclick=()=>{const c=document.getElementBy
 document.getElementById('jokeButton').onclick=()=>say('joke',{key:'joke'});
 document.getElementById('send').onclick=respond;
 document.getElementById('chatInput').onkeydown=e=>{if(e.key==='Enter')respond()};
-document.getElementById('mic').onclick=()=>{const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Rec){bubble.textContent='Microphone recognition is unavailable on this browser.';return}const rec=new Rec();rec.lang='en-GB';rec.onresult=e=>{document.getElementById('chatInput').value=e.results[0][0].transcript;respond()};rec.onerror=()=>bubble.textContent='Microphone unavailable. Try typing.';rec.start()};
+document.getElementById('mic').onclick=()=>{const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Rec){bubble.textContent='Microphone recognition is unavailable on this browser.';return}const rec=new Rec();rec.lang='en-GB';rec.onresult=e=>{document.getElementById('chatInput').value=e.results[0][0].transcript;respond()};rec.onerror=()=>bubble.textContent='Microphone unavailable. Try typing.';rec.onend=()=>{document.getElementById('mic').textContent='Speak'};document.getElementById('mic').textContent='Listening…';rec.start()};
 addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','BUTTON'].includes(e.target.tagName)||e.target.isContentEditable)return;keys[e.code]=true;if(e.code==='KeyE')interact()});
 addEventListener('keyup',e=>keys[e.code]=false);
 world.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;world.setPointerCapture(e.pointerId)});
