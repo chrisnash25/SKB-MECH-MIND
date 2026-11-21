@@ -33,13 +33,17 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
 #bottom button{min-width:70px}#title strong{font-size:clamp(19px,2vw,28px)}
 @media(max-width:690px){#title{left:12px;top:11px}#title strong{font-size:17px}#title small{font-size:11px}#selector{top:73px;flex-direction:row;left:10px;gap:4px}#selector button{font-size:11px;padding:7px}#supportLaunch{top:118px;left:10px}#helpToggle{top:11px;right:10px;width:34px;height:34px}#helpPanel{top:53px;z-index:10}#bottom{bottom:12px;right:6px;gap:4px}#bottom button{padding:9px 7px;font-size:12px}#speech{top:25%;left:50%;max-width:64vw}#player{bottom:153px;left:7px}#chat{bottom:67px}}
 @media(max-width:360px){#bottom button{font-size:11px;padding:7px 5px}}
+#selector{top:85px;left:12px;max-width:min(650px,calc(100vw - 24px));display:flex;flex-wrap:wrap;gap:5px;max-height:112px;overflow:auto;padding:5px;border-radius:12px;background:#2d2522b8}
+#selector button{font-size:12px;padding:7px 9px;white-space:nowrap}
+#supportLaunch{top:212px}
+@media(max-width:690px){#selector{top:66px;max-height:89px;max-width:calc(100vw - 18px);gap:3px}#selector button{padding:5px 7px;font-size:11px}#supportLaunch{top:164px;left:10px}#speech{top:29%}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body>
 <canvas id="world" aria-label="Real-time 3D living room"></canvas>
 <div id="overlay">
  <header id="title"><strong>Emotional Support<br>Brick Game</strong><small>Together We're Stronger!</small></header>
- <div id="selector"><button id="cartoon">Cartoon Brick</button><button id="realistic">Realistic Brick</button></div>
+ <div id="selector" role="group" aria-label="Choose a brick character"></div>
  <a id="supportLaunch" href="./support.html" aria-label="Open dedicated emotional support page">Emotional Support</a>
  <div id="status">3D Lounge</div>
  <div id="speech">Welcome home. Fancy a chat?</div>
