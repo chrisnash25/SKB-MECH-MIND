@@ -133,7 +133,7 @@ function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
-document.getElementById('name').textContent=real?'Rusty':'Bricko';activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
+document.getElementById('name').textContent=real?'Rusty':'Bricko';try{sessionStorage.setItem('esb-character',real?'rusty':'bricko')}catch{}activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();
 if(/feed|biscuit|hungry|eat/.test(q)){activities.feed();return}
@@ -142,11 +142,16 @@ if(/dance|music|song/.test(q)){activities.dance();return}
 if(/jenga/.test(q)){activities.jenga();return}
 if(/stack|tower|building/.test(q)){activities.stack();return}
 if(/memory|pairs/.test(q)){activities.memory();return}
+if(/joke|funny|make me laugh/.test(q)){say('joke',{key:'joke'});return}
+if(/what can we talk about|what should we talk about|have a chat/.test(q)){say('talk',{key:'talk'});return}
+if(/nice work|well done|good job|i won/.test(q)){say('cheer',{key:'cheer'});return}
+if(/i lost|i failed|that was bad/.test(q)){say('oops',{key:'oops'});return}
 const answer=/joke|funny/.test(q)?"I went to a party last night. I was the cornerstone of the conversation.":/sad|lonely|upset/.test(q)?"I'm sorry. Want to tell me about it, or shall we play something together?":/name|who are you/.test(q)?(player.real?"I'm Rusty, a well-weathered brick with a surprisingly big heart.":"I'm Bricko, the friendliest brick in the building!"):/hello|hey|hi/.test(q)?"Hello again! Shall we have some fun?":/how are you/.test(q)?"Quite solid, thanks for asking. That's brick humour for you.":"I heard you say "+text+". We could try a game, a dance or a biscuit.";say(answer)}
 document.getElementById('cartoon').onclick=()=>select(false);
 document.getElementById('realistic').onclick=()=>select(true);
 document.getElementById('interact').onclick=interact;
 document.getElementById('chatButton').onclick=()=>{const c=document.getElementById('chat');c.hidden=!c.hidden};
+document.getElementById('jokeButton').onclick=()=>say('joke',{key:'joke'});
 document.getElementById('send').onclick=respond;
 document.getElementById('chatInput').onkeydown=e=>{if(e.key==='Enter')respond()};
 document.getElementById('mic').onclick=()=>{const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Rec){bubble.textContent='Microphone recognition is unavailable on this browser.';return}const rec=new Rec();rec.lang='en-GB';rec.onresult=e=>{document.getElementById('chatInput').value=e.results[0][0].transcript;respond()};rec.onerror=()=>bubble.textContent='Microphone unavailable. Try typing.';rec.start()};
