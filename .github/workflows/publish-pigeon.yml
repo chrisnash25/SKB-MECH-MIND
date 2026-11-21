@@ -1,0 +1,83 @@
+name: Grand Theft Pigeon — Bristol 3D Web Build
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-pigeon.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  pigeon:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download independent 3D game source
+        env:
+          SOURCE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-e778-8210-9233-453a82f1bde3/raw?se=2026-11-21T01%3A29%3A59Z&sp=r&sv=2026-06-06&sr=b&scid=d44d5ffa-45d8-552e-9b47-63dceed7bf63&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-20T08%3A13%3A49Z&ske=2026-11-21T08%3A13%3A49Z&sks=b&skv=2026-06-06&sig=LlbjkHy3UuhwS/5SBZ44mD3Y4vZX7m6HpY0pfv6THCk%3D'
+        run: |
+          set -e
+          curl -fLsS --retry 4 "$SOURCE_URL" -o /tmp/pigeon.zip
+          echo '84729d2f74cedf0b41c1aedf240f21642ced7d986bc777124052a24601cef362  /tmp/pigeon.zip' | sha256sum -c -
+          mkdir -p /tmp/pigeon-game
+          unzip -q /tmp/pigeon.zip -d /tmp/pigeon-game
+          for f in project.godot scenes/main.tscn scripts/game.gd scripts/map_view.gd tests/smoke.gd audio/flap.wav audio/splat.wav audio/chip.wav; do test -s "/tmp/pigeon-game/$f"; done
+      - name: Install Godot 4.6.3 and web templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -O /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          sudo install /tmp/Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+          wget -q https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz -O /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/templates-dir
+          cp -a /tmp/templates-dir/templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+      - name: Import sounds and 3D project
+        run: |
+          set -o pipefail
+          timeout 120s godot --headless --path /tmp/pigeon-game --editor --import 2>&1 | tee /tmp/pigeon-import.log
+      - name: Run playable-game smoke tests
+        run: |
+          set -o pipefail
+          timeout 120s godot --headless --path /tmp/pigeon-game --script res://tests/smoke.gd 2>&1 | tee /tmp/pigeon-smoke.log
+          grep -q PIGEON_SMOKE_PASS /tmp/pigeon-smoke.log
+      - name: Export WebGL 2 browser game
+        run: |
+          mkdir -p /tmp/pigeon-web
+          cat > /tmp/pigeon-game/export_presets.cfg <<'EOF'
+          [preset.0]
+          name="Web"
+          platform="Web"
+          runnable=true
+          advanced_options=false
+          dedicated_server=false
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path="../pigeon-web/index.html"
+          [preset.0.options]
+          variant/extensions_support=false
+          variant/thread_support=false
+          html/export_icon=true
+          html/custom_html_shell=""
+          html/head_include=""
+          html/canvas_resize_policy=2
+          html/focus_canvas_on_start=true
+          progressive_web_app/enabled=false
+          EOF
+          set -o pipefail
+          timeout 150s godot --headless --path /tmp/pigeon-game --export-release Web /tmp/pigeon-web/index.html 2>&1 | tee /tmp/pigeon-export.log
+          for f in index.html index.js index.wasm index.pck; do test -s "/tmp/pigeon-web/$f"; done
+          ls -lh /tmp/pigeon-web/index.*
+      - name: Publish separately from DROPZONE
+        run: |
+          mkdir -p pigeon
+          cp -a /tmp/pigeon-web/. pigeon/
+          cp /tmp/pigeon.zip pigeon/source.zip
+          cp /tmp/pigeon-game/README.md pigeon/README.md
+          printf 'Grand Theft Pigeon: Shit Happens — Bristol-inspired 3D open-world prototype, 21 November 2026. 35 pedestrians, 12 cars, 24 chip pickups, flying pigeon, poop projectiles, map, menu, Xbox controls. SHA256 84729d2f74cedf0b41c1aedf240f21642ced7d986bc777124052a24601cef362.\n' > pigeon/BUILD_INFO.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A pigeon/
+          git commit -m "Publish playable Grand Theft Pigeon Bristol 3D open world" || exit 0
+          git push origin HEAD:main
