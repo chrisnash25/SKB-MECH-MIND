@@ -1,0 +1,293 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Emotional Support Brick — 3D Unhinged Edition v0.4</title><style>
+:root{font-family:system-ui,Arial;background:#0c0b14;color:#f6edf8}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 15%,#43243b,#0c0b14 70%);min-height:100vh}.app{max-width:850px;margin:auto;padding:18px 14px 45px}header{display:flex;align-items:center;justify-content:space-between;gap:8px}h1{font-size:clamp(23px,6vw,35px);margin:3px 0}small,.muted{color:#c4b8cd}.pill{background:#37233e;border:1px solid #a15bb7;border-radius:20px;padding:8px 12px;font-size:12px}.panel{background:#191622dd;border:1px solid #493750;border-radius:18px;padding:14px;margin-top:14px;box-shadow:0 12px 35px #0005}.stage{height:290px;position:relative;overflow:hidden;border-radius:16px;background:radial-gradient(ellipse at 50% 65%,#6b4956,#302434 55%,#18141d);display:flex;align-items:center;justify-content:center}.stage:after{content:'';position:absolute;bottom:22px;width:230px;height:28px;border-radius:50%;background:#100b12a8;filter:blur(8px)}.brick{width:210px;height:125px;position:relative;z-index:1;border-radius:12px;transform:rotate(-3deg);background:repeating-linear-gradient(0deg,transparent 0 14px,#ffffff09 15px 16px),linear-gradient(130deg,#c65b38,#933721 50%,#662719);border:5px solid #78301e;box-shadow:inset 8px 8px 13px #f0a06b60,inset -10px -9px 17px #280c0c99,13px 20px 25px #0009;transition:transform .3s,filter .4s}.brick.bounce{transform:translateY(-16px) rotate(4deg)}.eyes{position:absolute;top:35px;left:40px;right:40px;display:flex;justify-content:space-between}.eye{height:27px;width:24px;border-radius:50%;background:#fff;position:relative;box-shadow:0 0 7px #0006}.eye:after{content:'';position:absolute;width:12px;height:14px;background:#1b1821;border-radius:50%;top:8px;left:7px}.mouth{position:absolute;top:79px;left:88px;width:35px;height:13px;border-bottom:5px solid #321313;border-radius:0 0 60% 60%}.demon .brick{filter:drop-shadow(0 0 19px #ed183f);background:linear-gradient(135deg,#5d181b,#200c12)}.demon .eye{background:#ff263d;box-shadow:0 0 20px red}.demon .eye:after{background:#160000}.cute .brick{filter:drop-shadow(0 0 17px #ff91c5)}.chaos .brick{animation:wiggle .3s infinite alternate}@keyframes wiggle{to{transform:rotate(5deg) translateX(4px)}}.bubble{position:absolute;top:12px;left:12px;right:12px;text-align:center;font-weight:650;background:#15111edc;border:1px solid #aa7d9c;padding:10px;border-radius:12px;font-size:14px;z-index:2}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:12px}.metric{background:#241c2d;padding:10px;border-radius:12px;font-size:12px}.bar{height:8px;background:#44384b;border-radius:10px;margin-top:7px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#b85cff,#ff70a9);transition:width .3s}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button{border:1px solid #765480;background:#30243a;color:#fff;padding:13px 5px;border-radius:12px;font-size:13px;font-weight:650;cursor:pointer}button:active{transform:scale(.97)}button.active{background:#8643a2}button:disabled{opacity:.5}.tabs{display:flex;gap:8px;overflow:auto;margin-top:14px}.tabs button{flex:1;min-width:80px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.entry{background:#261e2e;padding:10px;border-radius:9px;margin-top:7px;font-size:13px}.section-title{font-size:17px;margin:2px 0 12px}.foot{font-size:12px;color:#a99db2;margin-top:15px;text-align:center}.hide{display:none}input{width:100%;padding:12px;background:#30243a;color:#fff;border:1px solid #75577f;border-radius:10px;margin:8px 0}.statline{display:flex;justify-content:space-between;gap:8px}#toast{min-height:20px;color:#ffb5d4;font-size:13px;margin:10px 0} .badge{color:#ffb4cf}.portrait{font-size:12px;opacity:.75} @media(min-width:700px){.metrics{grid-template-columns:repeat(4,1fr)}.stage{height:340px}.brick{transform:scale(1.2) rotate(-3deg)}}
+
+/* v0.3 - full 3D character studio */
+#stage{height:clamp(340px,54vw,530px);background:radial-gradient(ellipse at 50% 55%,#54445f 0%,#292239 45%,#11121d 90%);touch-action:none}
+#stage:after{display:none}
+#brick{display:none}
+#brick3d{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none;cursor:grab}
+#brick3d:active{cursor:grabbing}
+#speech{z-index:4;pointer-events:none;max-width:680px;margin:auto;left:14px;right:14px;backdrop-filter:blur(6px)}
+.skinBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.skinBar button{padding:10px 14px;min-height:42px}
+.skinBar button.active{border-color:#ffd48e;background:#6c3b50;box-shadow:0 0 0 1px #ffd48e}
+.skinTitle{font-size:12px;color:#c5aabf;font-weight:700;letter-spacing:.12em;margin:10px 0 2px}
+.studioHud{position:absolute;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:end;gap:8px;z-index:5;pointer-events:none}
+.studioHud>span{font-size:10px;background:#13111bca;padding:7px;border:1px solid #655c6c;border-radius:8px}
+.studioHud button{pointer-events:auto;padding:8px;font-size:11px;min-height:32px;background:#241e30d9}
+.studioHud .tools{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:550px){.skinBar button{flex:1;font-size:12px}.studioHud span{max-width:38%;line-height:1.5}.studioHud button{font-size:10px;padding:7px 6px}}
+#stage:fullscreen{height:100vh!important;width:100vw!important;border-radius:0}
+</style><style>
+/* Bricko V0.2: tactile material, lighting and evolution */
+.stage{background:radial-gradient(ellipse at 54% 32%,#68453b 0%,#30252a 43%,#101017 88%)!important;overflow:hidden;isolation:isolate}
+.stage:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 32px,#ffffff05 33px 34px),radial-gradient(ellipse at 50% 93%,#dca87a35,transparent 55%);pointer-events:none}
+.brick{background:radial-gradient(circle at 16% 20%,#e8a16c88 0 1px,transparent 2px),radial-gradient(circle at 80% 65%,#35120fbb 0 2px,transparent 3px),radial-gradient(circle at 41% 71%,#3d140d9c 0 1px,transparent 3px),repeating-linear-gradient(125deg,#a84a30 0px,#b85a39 3px,#92351f 6px,#b85c39 9px)!important;box-shadow:inset 0 3px 4px #f8c39488,inset 0 -13px 18px #36130fc9,0 12px 0 #5d251c,0 19px 3px #351711,0 38px 36px #000a!important;border:5px solid #73331f!important;border-radius:11px!important}
+.brick:before{content:"";position:absolute;inset:0;opacity:.42;pointer-events:none;background-image:radial-gradient(#ffca9966 .7px,transparent 1.5px),radial-gradient(#250b0b66 1px,transparent 2px);background-size:7px 8px,11px 13px;background-position:1px 2px,5px 8px;border-radius:6px}
+.brick:after{content:"";position:absolute;left:8%;right:8%;bottom:-18px;height:12px;background:#0007;filter:blur(7px);border-radius:50%;z-index:-1}
+.eye{background:radial-gradient(circle at 30% 26%,white,#ddd 65%,#888)!important}.eye:after{background:radial-gradient(circle at 30% 30%,#7ac7e9,#162e4d 60%,#090b16 65%)!important;box-shadow:inset 1px 1px 1px #fff8}
+.demon .brick{filter:drop-shadow(0 0 22px #ff1538)!important}.demon .eye{background:#ff1e38!important}.demon .eye:after{background:#150000!important}
+.brick.talking .mouth{animation:chatter .19s alternate infinite}.brick.talking{animation:breathe .35s alternate infinite}@keyframes chatter{to{height:23px;border-radius:40%;background:#361018}}@keyframes breathe{to{translate:0 -3px}}
+#evolveButton{display:none;width:100%;margin:10px 0 15px;padding:18px;font-size:18px;color:#20100e;background:linear-gradient(135deg,#fff0a1,#ff9e65,#ff70ac);box-shadow:0 0 22px #ffba5e55;animation:glow 1.5s infinite alternate}@keyframes glow{to{box-shadow:0 0 32px #ffda80aa;transform:scale(1.015)}}
+#voiceToggle{font-size:12px;padding:9px 13px} .voiceRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}
+#rebirth{position:fixed;inset:0;background:#0b060c;z-index:9999;display:none;overflow:hidden;align-items:center;justify-content:center;flex-direction:column;text-align:center}#rebirth.on{display:flex}#rebirth .half{position:absolute;inset:0;background:linear-gradient(135deg,#6e2e21,#190e16);transition:transform 1.4s cubic-bezier(.18,.9,.25,1)}#rebirth .left{clip-path:polygon(0 0,51% 0,46% 13%,53% 25%,47% 39%,52% 54%,46% 69%,51% 84%,46% 100%,0 100%)}#rebirth .right{clip-path:polygon(51% 0,100% 0,100% 100%,46% 100%,51% 84%,46% 69%,52% 54%,47% 39%,53% 25%,46% 13%)}#rebirth.split .left{transform:translateX(-105%) rotate(-8deg)}#rebirth.split .right{transform:translateX(105%) rotate(8deg)}#rebirth .baby{position:relative;z-index:2;font-size:100px;transform:scale(.05);opacity:0;transition:transform 1.1s,opacity .7s;filter:drop-shadow(0 15px 20px #000)}#rebirth.split .baby{transform:scale(1);opacity:1}#rebirth h1{position:relative;z-index:3;font-size:clamp(40px,11vw,86px);line-height:1;color:#ffcd83;text-shadow:0 4px 0 #812c2c,0 0 35px #ff2d6c;opacity:0;transform:scale(.2);transition:all .7s .9s}#rebirth.split h1{opacity:1;transform:scale(1)}#rebirth p{position:relative;z-index:3;max-width:320px;opacity:0;transition:opacity .6s 1.5s}#rebirth.split p{opacity:1}#rebirth button{position:relative;z-index:3;display:none;background:#f5a56b;color:#231016;padding:15px 30px}#rebirth.done button{display:block}
+</style><style>
+:root{font-family:Inter,ui-sans-serif,system-ui,Arial,sans-serif;background:#0a0911;color:#fff4f2}
+body{background:radial-gradient(ellipse at 45% -10%,#622b46 0%,#211421 35%,#080911 78%);font-size:14px}
+.app{max-width:990px;padding:20px 14px 54px}header{padding:8px 6px 12px;border-bottom:1px solid #99577645}
+header small{font-size:10px;letter-spacing:.18em;color:#ffae7c;font-weight:800}
+h1{font-size:clamp(27px,6vw,44px);letter-spacing:-.05em;line-height:1.02;text-shadow:0 5px 35px #d15c6555}
+header .muted{font-size:11px;letter-spacing:.14em;color:#dfb2b8;margin-top:7px;font-weight:700}
+.pill{border:1px solid #f1bb795e;background:#57323c;color:#ffd3a2;white-space:nowrap;font-weight:800}
+.panel{border:1px solid #ffb99b28;background:linear-gradient(155deg,#2d1c2eeb,#12151ef5);box-shadow:0 15px 55px #0009, inset 0 1px #ffffff08;padding:clamp(12px,2vw,21px);border-radius:21px}
+button{background:linear-gradient(145deg,#50334d,#30253c);border:1px solid #b485a244;min-height:43px;transition:filter .15s,background .15s,transform .12s;box-shadow:inset 0 1px #fff2}
+button:hover{filter:brightness(1.16)}button:focus-visible{outline:3px solid #ffd499;outline-offset:2px}button.active{background:linear-gradient(135deg,#9e5276,#5a3b71);border-color:#f7bfaa}
+.voiceRow{border-radius:12px;background:#140e18aa;padding:8px 12px;margin:0 0 15px}
+.skinTitle{margin-top:16px;font-size:11px;color:#e8a8aa}
+.skinBar button,.sceneBar button{font-size:12px;padding:10px 13px;min-height:42px}
+.sceneBar{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 15px}
+.sceneBar button{flex:1;min-width:110px;background:#2b2031;border:1px solid #774e63}
+.sceneBar button.active{background:#7b3745;color:#ffe3b0;border-color:#e8b186}
+#stage{height:clamp(380px,54vw,575px);border:1px solid #d7a1ad4a;box-shadow:inset 0 0 70px #0008,0 10px 40px #0007;transition:background .6s;background:radial-gradient(ellipse 42% 30% at 52% 42%,#a67a83 0%,transparent 90%),radial-gradient(ellipse at 50% 90%,#5c3444,#1b1725 64%,#10111d 100%)!important}
+#stage[data-scene="inferno"]{background:radial-gradient(ellipse at 50% 72%,#ac3b33bb,transparent 50%),radial-gradient(ellipse at 45% 20%,#66213d,#1a0d19 70%,#0a0910)!important}
+#stage[data-scene="royal"]{background:radial-gradient(ellipse at 52% 55%,#c6a66f88,transparent 56%),radial-gradient(ellipse at 48% 16%,#625173,#1e1d32 68%,#090d17)!important}
+#stage:before{background:radial-gradient(ellipse at 50% 75%,#e0a08022,transparent 62%),repeating-linear-gradient(0deg,transparent 0 39px,#fff1 40px 41px);opacity:.58;z-index:0}
+#brick3d{z-index:1;filter:drop-shadow(0 0 18px #ffac6c33)}
+.sceneTag{pointer-events:none;position:absolute;top:80px;left:15px;z-index:4;font-size:10px;font-weight:900;letter-spacing:.12em;color:#ffe2b5;text-shadow:0 2px 5px #0008;background:#201724b0;border:1px solid #e3b1aa55;border-radius:24px;padding:7px 11px}
+.liveDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#65f5a4;box-shadow:0 0 11px #5affab;margin:0 4px;vertical-align:middle}
+.bubble{background:#1d1421ea;border:1px solid #d5a4aa66;border-radius:14px;box-shadow:0 8px 25px #0008;padding:13px 15px;font-size:clamp(12px,2.4vw,15px);line-height:1.4}
+.studioHud>span{background:#15121fe0;color:#e7d7e2}.studioHud button{background:#3d283ae8;border:1px solid #ffc1aa49}
+.statline{align-items:center}#persona{font-size:18px;color:#ffd29a}.badge{background:#7e43664a;border:1px solid #cd8a9955;padding:6px 11px;border-radius:99px;font-size:11px}
+.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{background:#1e1723;border:1px solid #c992a91d;padding:12px 11px;border-radius:11px}.metric b{color:#ffe5c7}.fill{background:linear-gradient(90deg,#f58d60,#d66abe)}
+.actions{margin-top:12px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.actions button{background:linear-gradient(145deg,#60394d,#3a2943);min-height:58px;font-size:12px}
+.actions button:nth-child(3n+1){border-color:#e0a47766}
+#toast{margin:12px 4px;line-height:1.5;min-height:22px}
+.tabs button{background:#302132}.entry{background:#211a28;border:1px solid #ffffff0b}.foot{line-height:1.6;opacity:.9}
+.miniPanel{margin-top:12px;border-radius:15px;background:linear-gradient(140deg,#2e2032,#1d1e2c);padding:14px;border:1px solid #d39a7d40}
+.miniHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.miniHeader strong{color:#ffd39b;letter-spacing:.1em;font-size:13px}.miniHeader p{margin:5px 0 11px;color:#bcb0c5;font-size:12px}.miniHeader span{white-space:nowrap;font-size:10px;background:#433041;padding:7px;border-radius:7px;color:#ffcda1}
+.reflexTrack{position:relative;height:25px;border-radius:7px;background:linear-gradient(90deg,#5a2c46,#753a59,#482a47);overflow:hidden;border:1px solid #c38c9f80;box-shadow:inset 0 4px 9px #0006}
+.targetZone{position:absolute;left:44%;width:12%;height:100%;background:linear-gradient(90deg,#ffda70aa,#ffe9a3);box-shadow:0 0 17px #fff0ae;z-index:1}
+.reflexMarker{position:absolute;z-index:2;width:5px;background:#f4ffff;height:100%;left:0;box-shadow:0 0 13px #d9ffff}
+.miniFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.miniFooter span{color:#c8b9ce;font-size:11px;line-height:1.5}.miniFooter button{min-width:133px;padding:10px;font-size:11px;color:#291625;background:linear-gradient(135deg,#ffe3a2,#f4a07a);border-color:#ffe9b6}
+@media(max-width:550px){#stage{height:425px}.sceneTag{top:81px;font-size:8px}.studioHud .tools button{font-size:9px;padding:7px 5px}.miniFooter{align-items:flex-end}.miniFooter button{min-width:123px}header h1{max-width:280px}}
+@media(min-width:900px){.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.actions{grid-template-columns:repeat(3,1fr)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style></head><body><main class="app"><header><div><small>18+ COMEDY • INTERACTIVE PROTOTYPE</small><h1>🧱 Emotional Support Brick</h1><div class="muted">UNHINGED 3D · BRICKO UNLEASHED · v0.4</div></div><span class="pill" id="level">LVL 1</span></header><button id="evolveButton">✨ LET’S GO — SOMETHING IS HAPPENING ✨</button><section class="panel"><div class="voiceRow"><small>🔊 Bricko can speak (device voice)</small><button id="voiceToggle">Voice: OFF</button></div><div class="skinTitle">CUSTOMISE YOUR LIVING NIGHTMARE</div><div class="skinBar" role="group" aria-label="Face skins"><button data-skin="human" aria-pressed="true">Human-ish</button><button data-skin="puppet" aria-pressed="false">Chaos Puppet</button></div><div class="sceneBar" role="group" aria-label="3D environments"><button data-scene="studio">The Studio</button><button data-scene="inferno">Demon Basement</button><button data-scene="royal">Royal Penthouse</button></div><div class="statline"><strong id="persona">Baby Bricko</strong><span class="badge" id="mood">Affectionate</span></div><div class="stage cute" id="stage" data-scene="studio"><span class="sceneTag">LIVE 3D <span class="liveDot"></span> DRAG TO ROTATE · TAP TO POKE</span><div class="bubble" id="speech">Daddy, chill. I'm literally a brick.</div><div class="studioHud"><span><b id="skinName">REALISTIC HUMAN FACE</b><br><span id="renderInfo">Loading 3D renderer...</span></span><div class="tools"><button id="resetView" title="Reset camera">Reset view</button><button id="qualityBrick" title="Toggle quality">1080p / HQ</button><button id="fullscreenBrick" title="Fullscreen">Fullscreen</button></div></div><div class="brick" id="brick"><div class="eyes"><div class="eye"></div><div class="eye"></div></div><div class="mouth"></div></div></div><div class="metrics" id="metrics"></div><div id="toast" role="status" aria-live="polite"></div><section class="miniPanel" aria-label="Bricko Reflex mini game"><div class="miniHeader"><div><strong>⚡ BRICKO REFLEX</strong><p>Stop the moving marker in the gold zone. Your brick will judge you.</p></div><span id="bestReflex">BEST 0%</span></div><div class="reflexTrack" id="reflexTrack" aria-hidden="true"><div class="targetZone"></div><div class="reflexMarker" id="reflexMarker"></div></div><div class="miniFooter"><span id="reflexStatus">Ready when your questionable reflexes are.</span><button id="reflexButton">START CHALLENGE</button></div></section><div class="actions" id="actions"><button data-act="cuddle">❤️ Cuddle</button><button data-act="praise">✨ Compliment</button><button data-act="snack">🍔 Feed</button><button data-act="insult">😈 Insult</button><button data-act="scare">👻 Scare</button><button data-act="ignore">🙄 Ignore</button><button data-act="play">🎮 Play</button><button data-act="therapy">🛋️ Therapy</button><button data-act="chaos">⚡ Chaos</button></div></section><nav class="tabs"><button class="active" data-tab="story">Story</button><button data-tab="personalities">Personalities</button><button data-tab="shop">Shop</button><button data-tab="settings">Settings</button></nav><section class="panel" id="content"></section><div class="foot">Made for ridiculous adults. All 3D graphics, dialogue and saves run locally. No sign-in, tracking or microphone.</div></main><div id="rebirth" aria-live="assertive"><div class="half left"></div><div class="half right"></div><div class="baby">🧱</div><h1>YOU LITTLE BRICK!</h1><p>Congratulations. You raised a brick so badly it produced another brick. New life. Same bullshit.</p><button id="newLife">MEET YOUR BABY BRICK →</button></div><script>
+const personalities=[['Baby Bricko','Sweet, clingy, and unbelievably needy.'],['Demon Bricko','Glowing eyes, ominous threats, supernatural tantrums.'],['Psycho Bricko','Furious at everything, including gravity.'],['King Bricko','Thinks the entire building belongs to him.'],['Sad Bricko','Emotionally devastated by a broken biscuit.'],['Dirty Bricko','Innuendo, terrible flirting, and zero shame.'],['Paranoid Bricko','The toaster is definitely a government spy.'],['Lazy Bricko','Refuses to move. Claims it is union policy.'],['Rebel Bricko','A tiny rectangular menace to society.'],['Professor Bricko','Overexplains everything with unjustified confidence.'],['Chaos Bricko','A different disaster every five seconds.'],['Lover Bricko','Hopelessly romantic about household appliances.'],['Cowboy Bricko','Challenges garden ornaments to duels.'],['Corporate Bricko','Charges an administrative fee for cuddles.'],['Glitch Bricko','Unstable, contradictory, and deeply confused.']];
+const defaults={care:75,respect:60,stress:12,chaos:10,energy:75,coins:100,xp:0,actions:0,memories:[],inventory:[],last:Date.now(),name:'Bricko',horror:true,swearing:true,tab:'story',scene:'studio',equipped:'',discovered:[],bestReflex:0};let s;try{s={...defaults,...JSON.parse(localStorage.getItem('bricko_save')||'{}')}}catch{s={...defaults}};s.discovered=Array.isArray(s.discovered)?s.discovered:[];s.scene=['studio','inferno','royal'].includes(s.scene)?s.scene:'studio';s.equipped=typeof s.equipped==='string'?s.equipped:'';s.bestReflex=Number(s.bestReflex)||0;const $=id=>document.getElementById(id);const clamp=n=>Math.max(0,Math.min(100,n));const save=()=>localStorage.setItem('bricko_save',JSON.stringify(s));const pick=a=>a[Math.floor(Math.random()*a.length)];const dialogues={
+'Baby Bricko':["Daddy, chill. I'm literally just a brick.","You're my favourite structurally unsound human.","Can I have a tiny blanket? For emotional reasons."],
+'Demon Bricko':["The mortar remembers what you did.","You built a home. I built a grudge.","I AM THE WALL BETWEEN WORLDS. Also, where's my biscuit?"],
+'Psycho Bricko':["DON'T TOUCH ME. WHY DID YOU STOP TOUCHING ME?","I'M GOING TO FILE A COMPLAINT AGAINST THE ENTIRE HOUSE."],
+'King Bricko':["Kneel, unpaid human.","Your affection has been reviewed and found inadequate."],
+'Sad Bricko':["The biscuit broke. Like my trust.","Sometimes I wish I was a paving slab."],
+'Dirty Bricko':["I saw that sexy bit of masonry down the street.","Are you flirting with a breeze block behind my back?"],
+'Paranoid Bricko':["The kettle blinked twice. That's a signal.","Put a hat on the Wi-Fi router. They know."],
+'Lazy Bricko':["I've been holding this room together emotionally. I'm knackered.","Wake me up when the floor moves itself."],
+'Rebel Bricko':["Fuck the building regulations.","I refuse to be load-bearing anymore."],
+'Professor Bricko':["Technically, I am a highly sophisticated ceramic-based organism.","Your hypothesis lacks mortar."],
+'Chaos Bricko':["I DECLARE MYSELF A MICROWAVE.","The curtains are now my legal guardians."],
+'Lover Bricko':["I wrote a poem for the toaster. It left me on read.","Our love is stronger than cement."],
+'Cowboy Bricko':["This town ain't big enough for two breeze blocks, partner.","Draw, you yellow-bellied garden gnome!"],
+'Corporate Bricko':["Your cuddle request has been escalated to management.","We are restructuring your friendship."],
+'Glitch Bricko':["DADDY—ERROR—YOUR MAJESTY—BISCUIT.","I have seventeen feelings and none of them have loaded."]};
+function persona(){let {care:c,respect:r,stress:t,chaos:h,energy:e,actions:a}=s;if(h>88&&t>70)return 'Glitch Bricko';if(t>76&&r<42)return 'Demon Bricko';if(t>67&&h>42)return 'Psycho Bricko';if(h>78)return 'Chaos Bricko';if(r>83&&c<50)return 'King Bricko';if(c<28&&t>32)return 'Sad Bricko';if(e<20&&t<65)return 'Lazy Bricko';if(r<34&&h>38)return 'Rebel Bricko';if(c>82&&r>72&&h<25)return 'Lover Bricko';if(a>20&&h>55&&r>45)return 'Cowboy Bricko';if(a>18&&r>75&&c<68)return 'Corporate Bricko';if(a>15&&h>55&&t<40)return 'Dirty Bricko';if(a>14&&t>48&&h<42)return 'Paranoid Bricko';if(a>12&&r>70&&h<22)return 'Professor Bricko';return 'Baby Bricko'}
+function render(){let p=persona();if(!s.discovered.includes(p))s.discovered.push(p);$('persona').textContent=p;$('mood').textContent=s.stress>70?'Unstable':s.care>70?'Affectionate':s.chaos>65?'Chaotic':'Complicated';$('stage').className='stage '+(p==='Demon Bricko'?'demon':p==='Baby Bricko'?'cute':p==='Chaos Bricko'||p==='Glitch Bricko'?'chaos':'');$('level').textContent='LVL '+(Math.floor(s.xp/150)+1);$('metrics').innerHTML=[['❤️ Care',s.care],['👑 Respect',s.respect],['😱 Stress',s.stress],['⚡ Chaos',s.chaos],['🔋 Energy',s.energy],['🪙 Coins',s.coins],['⭐ XP',s.xp],['📖 Memories',s.memories.length]].map(([k,v])=>`<div class="metric"><div class="statline"><span>${k}</span><b>${v}</b></div><div class="bar"><div class="fill" style="width:${k.includes('Coins')||k.includes('XP')||k.includes('Memories')?Math.min(100,v%101):v}%"></div></div></div>`).join('');renderTab();save()}
+function speak(t){$('speech').textContent=t;$('brick').classList.add('bounce');setTimeout(()=>$('brick').classList.remove('bounce'),320)}
+function act(a){const change={cuddle:[12,3,-9,-2,-4],praise:[6,12,-5,-2,0],snack:[5,0,-2,0,12],insult:[-13,-14,18,7,-3],scare:[-10,-7,22,14,-6],ignore:[-10,-6,8,4,10],play:[7,2,-7,12,-13],therapy:[9,6,-20,-8,-7],chaos:[-5,-9,12,24,-12]}[a];if(!change)return;let old=persona();['care','respect','stress','chaos','energy'].forEach((k,i)=>s[k]=clamp(s[k]+change[i]));s.actions++;s.xp+=12;s.coins+=5;let next=persona();let entry=`${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}: ${a}${old!==next?' → '+next:''}`;s.memories.unshift(entry);s.memories=s.memories.slice(0,40);render();let lines=dialogues[next];let msg=pick(lines);if(a==='insult')msg=pick(["You absolute fucking disappointment.","That was rude. I'm telling the patio.",msg]);if(a==='cuddle'&&next==='Baby Bricko')msg="Daddy, chill... actually don't stop. This is nice.";if(a==='therapy')msg="My therapist says I need boundaries. So I've bought a fence.";speak(msg);$('toast').textContent=old!==next?`⚡ PERSONALITY SHIFT: ${old} → ${next}`:`+12 XP · +5 coins · Bricko remembers that you chose ${a}.`;save()}
+function renderTab(){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===s.tab));let html='';if(s.tab==='story')html=`<h2 class="section-title">📖 Bricko's Life</h2><p class="muted">Every action changes Bricko's emotional state. Discover all 15 personalities and unlock ridiculous upgrades.</p><div class="entry">🎯 Mission: reach level 3 and unlock Demon Bricko.</div><div class="entry">🪙 Coins: ${s.coins} · ⭐ Experience: ${s.xp} · 🎬 Interactions: ${s.actions}</div><h3>Recent memories</h3>${s.memories.length?s.memories.slice(0,8).map(m=>`<div class="entry">${m.replaceAll('<','&lt;')}</div>`).join(''):'<div class="entry">Bricko has no memories yet. Disturbing.</div>'}`;if(s.tab==='personalities')html=`<h2 class="section-title">🎭 15 personalities</h2><p class="muted">These are emergent modes, not manual selections. Change Bricko through your actions.</p>${personalities.map(([n,d],i)=>`<div class="entry"><strong>${i+1}. ${n}</strong> ${persona()===n?'🟣 CURRENT':s.discovered.includes(n)?'✓ DISCOVERED':'🔒 UNKNOWN'}<div class="muted">${d}</div></div>`).join('')}`;if(s.tab==='shop')html=`<h2 class="section-title">🛒 The Completely Pointless Shop</h2><p class="muted">Spend coins earned by interacting with Bricko. Owned items are saved.</p><div class="grid">${[['Tiny Beanie',50],['Velvet Throne',100],['Tin Foil Hat',75],['Therapy Couch',150],['Cowboy Hat',125],['Cursed Candle',200]].map(([n,c])=>`<button data-buy="${n}" data-cost="${c}" ${(!s.inventory.includes(n)&&s.coins<c)?'disabled':''}>${n}<br>${s.inventory.includes(n)?(s.equipped===n?'✓ EQUIPPED':'OWNED · EQUIP'):c+' coins'}</button>`).join('')}</div><p class="muted">Owned hats are now visible in 3D. Tap an owned hat to equip or remove it. Other items become visible set decorations.</p><div class="entry">🎭 Discovered ${s.discovered.length}/15 personalities · 🏆 Best reflex ${s.bestReflex}%</div>`;if(s.tab==='settings')html=`<h2 class="section-title">⚙️ Settings</h2><div class="entry">Adult comedy and horror: <button data-setting="horror">${s.horror?'ON':'OFF'}</button></div><div class="entry">Strong language: <button data-setting="swearing">${s.swearing?'ON':'OFF'}</button></div><div class="entry"><button data-reset="1">Reset Bricko and erase saved progress</button></div><p class="muted">This version stores progress locally in your browser. No account, network connection or microphone required.</p>`;$('content').innerHTML=html}
+document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.act)));document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{s.tab=b.dataset.tab;render()}));$('content').addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.buy){let n=b.dataset.buy,c=+b.dataset.cost;if(s.inventory.includes(n)){s.equipped=s.equipped===n?'':n;window.Bricko3D?.react('equip');speak(s.equipped?'Fashion! I look like a high-end structural disaster.':'Fine, I will be naked masonry.');render()}else if(s.coins>=c){s.coins-=c;s.inventory.push(n);s.equipped=n;window.Bricko3D?.react('equip');speak('You bought me '+n+'? This is an emotionally irresponsible purchase. I love it.');render()}}if(b.dataset.setting){s[b.dataset.setting]=!s[b.dataset.setting];render()}if(b.dataset.reset&&confirm('Reset all progress and memories?')){s={...defaults,memories:[],inventory:[]};render();speak('Who are you? Why am I rectangular?')}});
+const oldSpeak=speak; speak=function(t){if(!s.swearing)t=t.replace(/fuck(ing)?/gi,'fudge').replace(/bastard/gi,'rascal');if(!s.horror&&persona()==='Demon Bricko')t='I am a very spooky brick. Boo.';oldSpeak(t)};render();
+
+// V0.2: optional device speech, no cloud service; voice availability varies by Android browser.
+let voiceOn=false, speechToken=0;
+const voiceButton=$('voiceToggle');
+voiceButton.onclick=()=>{voiceOn=!voiceOn;voiceButton.textContent='Voice: '+(voiceOn?'ON':'OFF');if(voiceOn){talkNow('Oh, brilliant. You gave a fucking brick the power of speech.')}else if('speechSynthesis' in window){speechSynthesis.cancel()}};
+function talkNow(line){if(!voiceOn||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(line);const p=persona();utter.lang='en-GB';utter.rate=p==='Demon Bricko'?.72:p==='Baby Bricko'?1.12:1.0;utter.pitch=p==='Demon Bricko'?.38:p==='Baby Bricko'?1.65:p==='Psycho Bricko'?.85:1.05;utter.volume=1;const voices=speechSynthesis.getVoices();const british=voices.find(v=>v.lang==='en-GB')||voices.find(v=>v.lang.startsWith('en'));if(british)utter.voice=british;utter.onstart=()=>{$('brick').classList.add('talking')};utter.onend=utter.onerror=()=>{$('brick').classList.remove('talking')};speechSynthesis.speak(utter)}catch(e){voiceButton.textContent='Voice unavailable'}}
+const originalSpeech=speak;
+speak=function(line){originalSpeech(line);const displayed=$('speech').textContent;talkNow(displayed)};
+// Rebirth unlocks at level 10 (1350 XP), one-time per life.
+let prestige=Number(localStorage.getItem('bricko_prestige')||0);
+function checkEvolution(){const unlocked=s.xp>=1350;const btn=$('evolveButton');btn.style.display=unlocked?'block':'none';btn.textContent=unlocked?'✨ LEVEL 10 REACHED — LET’S GO! ✨':''}
+const baseRender=render;render=function(){baseRender();checkEvolution()};
+document.addEventListener('click',e=>{if(e.target.closest('[data-act]'))queueMicrotask(checkEvolution)});
+$('evolveButton').onclick=()=>{const overlay=$('rebirth');overlay.className='on';if('speechSynthesis' in window)speechSynthesis.cancel();voiceOn=false;voiceButton.textContent='Voice: OFF';requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('split')));setTimeout(()=>overlay.classList.add('done'),2100)};
+$('newLife').onclick=()=>{prestige++;localStorage.setItem('bricko_prestige',String(prestige));s={...defaults,memories:[`Life ${prestige+1}: Bricko cracked open and a baby brick emerged.`,...s.memories.slice(0,5)],inventory:[],coins:100+prestige*25};save();$('rebirth').className='';render();speak('Daddy, chill. I just got born. What the fuck is a mortgage?');window.scrollTo({top:0,behavior:'smooth'})};
+checkEvolution();
+</script><script>
+(()=>{'use strict';
+const stage=document.getElementById('stage');
+const canvas=document.createElement('canvas');canvas.id='brick3d';canvas.setAttribute('aria-label','Interactive 3D Bricko model. Drag to rotate.');stage.insertBefore(canvas,stage.firstChild);
+const gl=canvas.getContext('webgl2',{alpha:true,antialias:true,depth:true,powerPreference:'high-performance'});
+const state={reaction:'idle',reactionAt:0,pokeAt:0,skin:s.skin==='puppet'?'puppet':'human',azimuth:-0.17,elevation:0.08,zoom:5.5,burst:0,blink:0,blinkAt:0,blinkUntil:0,mood:'Baby Bricko',last:0,drag:false,turn:0,spin:0,quality:'high'};
+const info=document.getElementById('renderInfo');
+const fallback=()=>{canvas.style.display='none';document.getElementById('brick').style.display='block';info.textContent='3D unavailable on this device — showing original Bricko.'};
+if(!gl){fallback();return;}
+const vs=`#version 300 es
+precision highp float;
+in vec3 aPos;in vec3 aNormal;in vec2 aUv;
+uniform mat4 uModel;uniform mat4 uVP;
+out vec3 vNormal;out vec3 vPos;out vec3 vLocal;out vec2 vUv;
+void main(){vec4 p=uModel*vec4(aPos,1.);vPos=p.xyz;vNormal=normalize(mat3(uModel)*aNormal);vLocal=aPos;vUv=aUv;gl_Position=uVP*p;}`;
+const fs=`#version 300 es
+precision highp float;
+in vec3 vNormal;in vec3 vPos;in vec3 vLocal;in vec2 vUv;
+uniform vec3 uColor;uniform float uMaterial;uniform float uTime;uniform vec3 uEye;uniform float uMood;
+out vec4 outColor;
+float hash(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
+float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+void main(){vec3 n=normalize(vNormal);vec3 c=uColor;float rough=.65;float grain=noise(vPos*34.);
+if(uMaterial<.5){float n1=noise(vLocal*23.),n2=noise(vLocal*105.);c*=.74+.36*n1+.10*n2;float pore=step(.83,n2);c*=1.-pore*.15;rough=.9;}
+else if(uMaterial<1.5){c*=.88+.16*noise(vPos*15.)+.04*noise(vPos*65.);rough=.57;}
+else if(uMaterial<2.5){float fuzz=noise(vPos*190.);c*=.72+.39*fuzz;rough=.97;}
+else if(uMaterial<3.5){rough=.18;}
+else if(uMaterial<4.5){rough=.36;}
+else if(uMaterial<5.5){c*=.8+.23*noise(vPos*8.);rough=.9;}
+vec3 key=normalize(vec3(-.5,.8,1.1)),fill=normalize(vec3(.8,.3,-.6)),rim=normalize(vec3(.5,.65,-.9));
+float d=max(dot(n,key),0.),f=max(dot(n,fill),0.),r=pow(max(dot(n,rim),0.),2.);
+vec3 light=c*(.23+1.10*d+.38*f+.40*r);
+vec3 v=normalize(uEye-vPos);vec3 h=normalize(key+v);float spec=pow(max(dot(n,h),0.),mix(7.,90.,1.-rough));
+light+=vec3(1.,.81,.70)*spec*(.06+.45*(1.-rough));light+=vec3(.26,.02,.06)*uMood*(.10+.20*max(dot(n,rim),0.));
+light=light/(light+vec3(.6));light=pow(light,vec3(.83));
+outColor=vec4(light,1.);}`;
+function shader(type,src){let sh=gl.createShader(type);gl.shaderSource(sh,src);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(sh));return sh;}
+let prog;try{prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vs));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));}catch(e){console.error('Bricko 3D shader:',e);fallback();return;}
+gl.useProgram(prog);
+const loc={p:gl.getAttribLocation(prog,'aPos'),n:gl.getAttribLocation(prog,'aNormal'),uv:gl.getAttribLocation(prog,'aUv'),m:gl.getUniformLocation(prog,'uModel'),vp:gl.getUniformLocation(prog,'uVP'),col:gl.getUniformLocation(prog,'uColor'),mat:gl.getUniformLocation(prog,'uMaterial'),time:gl.getUniformLocation(prog,'uTime'),eye:gl.getUniformLocation(prog,'uEye'),mood:gl.getUniformLocation(prog,'uMood')};
+const I=()=>[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+const mul=(a,b)=>{const c=new Array(16).fill(0);for(let j=0;j<4;j++)for(let i=0;i<4;i++)for(let k=0;k<4;k++)c[j*4+i]+=a[k*4+i]*b[j*4+k];return c};
+const T=(x=0,y=0,z=0)=>{let a=I();a[12]=x;a[13]=y;a[14]=z;return a};
+const S=(x=1,y=x,z=x)=>{let a=I();a[0]=x;a[5]=y;a[10]=z;return a};
+const RY=a=>{let m=I(),c=Math.cos(a),s=Math.sin(a);m[0]=c;m[8]=s;m[2]=-s;m[10]=c;return m};
+const RX=a=>{let m=I(),c=Math.cos(a),s=Math.sin(a);m[5]=c;m[9]=-s;m[6]=s;m[10]=c;return m};
+const RZ=a=>{let m=I(),c=Math.cos(a),s=Math.sin(a);m[0]=c;m[4]=-s;m[1]=s;m[5]=c;return m};
+const compose=(...ms)=>ms.reduce(mul,I());
+const sub=(a,b)=>a.map((v,i)=>v-b[i]);const dot=(a,b)=>a.reduce((v,x,i)=>v+x*b[i],0);const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];const norm=a=>{const l=Math.hypot(...a)||1;return a.map(x=>x/l)};
+function look(eye,target){let z=norm(sub(eye,target)),x=norm(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1];}
+function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2);return [f/aspect,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,2*far*near/(near-far),0]}
+function mesh(pos,norms,uv,idx){let vao=gl.createVertexArray();gl.bindVertexArray(vao);const attach=(data,attr,size)=>{const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);gl.enableVertexAttribArray(attr);gl.vertexAttribPointer(attr,size,gl.FLOAT,false,0,0)};attach(pos,loc.p,3);attach(norms,loc.n,3);attach(uv,loc.uv,2);let ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(idx),gl.STATIC_DRAW);gl.bindVertexArray(null);return {vao,count:idx.length};}
+function sphere(seg=24,rings=16){let p=[],n=[],u=[],idx=[];for(let y=0;y<=rings;y++){let v=y/rings,theta=v*Math.PI;for(let x=0;x<=seg;x++){let t=x/seg*Math.PI*2,px=Math.sin(theta)*Math.cos(t),py=Math.cos(theta),pz=Math.sin(theta)*Math.sin(t);p.push(px,py,pz);n.push(px,py,pz);u.push(x/seg,v)}}for(let y=0;y<rings;y++)for(let x=0;x<seg;x++){let a=y*(seg+1)+x,b=a+seg+1;idx.push(a,b,a+1,b,b+1,a+1)}return mesh(p,n,u,idx)}
+function roundedBox(w,h,d,r=.16,steps=12){let p=[],n=[],uv=[],ids=[];const half=[w/2,h/2,d/2];const faces=[[0,1,2,1],[0,1,2,-1],[2,1,0,1],[2,1,0,-1],[0,2,1,1],[0,2,1,-1]];for(let face of faces){let [a,b,c,sgn]=face,base=p.length/3;for(let j=0;j<=steps;j++)for(let i=0;i<=steps;i++){let q=[0,0,0];q[a]=(i/steps-.5)*half[a]*2;q[b]=(j/steps-.5)*half[b]*2;q[c]=half[c]*sgn;let core=q.map((v,k)=>Math.max(-half[k]+r,Math.min(half[k]-r,v)));let delta=sub(q,core),normal=norm(delta);let point=core.map((v,k)=>v+normal[k]*r);p.push(...point);n.push(...normal);uv.push(i/steps,j/steps)}for(let j=0;j<steps;j++)for(let i=0;i<steps;i++){let a0=base+j*(steps+1)+i,b0=a0+steps+1;const flip=(c===1?sgn===1:sgn===-1);if(flip)ids.push(a0,a0+1,b0,a0+1,b0+1,b0);else ids.push(a0,b0,a0+1,a0+1,b0,b0+1)}}return mesh(p,n,uv,ids)}
+function cylinder(sides=64){let p=[],n=[],u=[],idx=[];for(let i=0;i<=sides;i++){let a=i/sides*Math.PI*2,x=Math.cos(a),z=Math.sin(a);for(let j=0;j<=1;j++){p.push(x,j*2-1,z);n.push(x,0,z);u.push(i/sides,j)}}for(let i=0;i<sides;i++){let a=i*2,b=a+2;idx.push(a,b,a+1,b,b+1,a+1)}return mesh(p,n,u,idx)}
+function tube(points,r=.03,steps=9){let p=[],n=[],u=[],idx=[];for(let i=0;i<points.length;i++){let prev=points[Math.max(0,i-1)],next=points[Math.min(points.length-1,i+1)],tangent=norm(sub(next,prev)),ref=Math.abs(tangent[1])>.85?[1,0,0]:[0,1,0],side=norm(cross(tangent,ref)),up=norm(cross(side,tangent));for(let j=0;j<=steps;j++){let a=j/steps*2*Math.PI,d=side.map((v,k)=>v*Math.cos(a)+up[k]*Math.sin(a));p.push(...points[i].map((v,k)=>v+r*d[k]));n.push(...d);u.push(i/points.length,j/steps)}}for(let i=0;i<points.length-1;i++)for(let j=0;j<steps;j++){let a=i*(steps+1)+j,b=a+steps+1;idx.push(a,b,a+1,b,b+1,a+1)}return mesh(p,n,u,idx)}
+const globe=sphere(28,18),box=roundedBox(2.85,1.78,.9,.16,18),plinth=cylinder(64);
+const parts=[];const col=(hex)=>[parseInt(hex.slice(1,3),16)/255,parseInt(hex.slice(3,5),16)/255,parseInt(hex.slice(5,7),16)/255];
+function add(group,shape,color,mat,xyz=[0,0,0],size=[1,1,1],rot=0){let obj={group,shape,color:col(color),hex:color,mat,xyz,size,rot};parts.push(obj);return obj}
+function ball(group,color,mat,x,y,z,sx,sy,sz){return add(group,globe,color,mat,[x,y,z],[sx,sy,sz])}
+function line(group,pts,color,r=.025,mat=1){return add(group,tube(pts,r),color,mat)}
+// Common photoreal-inspired terracotta brick with a genuinely rounded 3D silhouette.
+add('all',box,'#bd5838',0,[0,.05,0]);
+// Handmade inset human face: brows, eyelids, nose, cheeks, lips, teeth and reflective irises.
+ball('human','#be8465',1,0,.055,.485,.94,.73,.14);
+ball('human','#a76a52',1,-.63,-.11,.57,.27,.28,.09);ball('human','#a76a52',1,.63,-.11,.57,.27,.28,.09);
+for(const side of [-1,1]){
+ const x=side*.355;
+ ball('human','#75473c',1,x,.255,.605,.245,.183,.056);
+ ball('human','#f0dfcf',3,x,.263,.671,.198,.137,.095);
+ ball('human','#86604c',3,x+side*.012,.255,.759,.085,.092,.03);
+ ball('human','#181416',3,x+side*.012,.255,.789,.043,.055,.025);
+ ball('human','#fef6e9',3,x-.022,.297,.811,.019,.021,.012);
+ line('human',Array.from({length:9},(_,i)=>{let t=i/8;return[x-.20+t*.4,.416+.05*Math.sin(t*Math.PI),.668]}),'#654334',.034,1);
+ line('human',Array.from({length:9},(_,i)=>{let t=i/8;return[x-.19+t*.38,.345+.035*Math.sin(t*Math.PI),.715]}),'#8d5344',.019,1);
+}
+ball('human','#bd8368',1,0,.025,.657,.115,.27,.11);
+ball('human','#c18b6e',1,0,-.095,.738,.185,.12,.135);
+ball('human','#b07c61',1,-.138,-.13,.713,.082,.066,.07);ball('human','#b07c61',1,.138,-.13,.713,.082,.066,.07);
+ball('human','#4b2725',1,0,-.355,.642,.30,.112,.065);
+ball('human','#e9d7c8',3,0,-.317,.707,.23,.035,.012);
+line('human',Array.from({length:13},(_,i)=>{let t=(i/12-.5)*2;return[t*.31,-.285+.028*(1-t*t),.685-.09*t*t]}),'#9b514e',.047,1);
+line('human',Array.from({length:13},(_,i)=>{let t=(i/12-.5)*2;return[t*.31,-.410-.024*(1-t*t),.685-.09*t*t]}),'#b56560',.044,1);
+ball('human','#bd876c',1,0,-.535,.57,.37,.12,.08);
+// Original hand-built Muppet-style puppet skin (not any existing copyrighted character).
+ball('puppet','#14a69b',2,0,.055,.49,1.09,.77,.17);
+ball('puppet','#087c7c',2,-.65,-.10,.59,.25,.22,.12);ball('puppet','#087c7c',2,.65,-.10,.59,.25,.22,.12);
+for(const side of [-1,1]){
+ const x=side*.37;
+ ball('puppet','#fdf5e7',3,x,.38,.69,.265,.295,.22);
+ ball('puppet','#262528',3,x+side*.047,.335,.886,.10,.115,.042);
+ ball('puppet','#fffefa',3,x+side*.015,.385,.923,.028,.031,.018);
+ line('puppet',Array.from({length:10},(_,i)=>{let t=i/9;return[x-.24+t*.48,.728+.04*Math.sin(t*Math.PI),.725]}),'#075c5d',.060,2);
+}
+ball('puppet','#ee8d36',1,0,.01,.83,.28,.20,.21);
+ball('puppet','#a44d55',1,0,-.365,.625,.59,.30,.115);
+ball('puppet','#211320',5,0,-.35,.721,.52,.24,.08);
+ball('puppet','#fa778b',1,0,-.50,.791,.29,.095,.035);
+line('puppet',Array.from({length:15},(_,i)=>{let t=(i/14-.5)*2;return[t*.56,-.18-.04*(1-t*t),.745-.11*t*t]}),'#ed6280',.06,2);
+line('puppet',Array.from({length:15},(_,i)=>{let t=(i/14-.5)*2;return[t*.55,-.57+.03*(1-t*t),.748-.11*t*t]}),'#ed6280',.057,2);
+for(let i=0;i<11;i++){let x=(i-5)*.135;line('puppet',[[x,.66,.54],[x+Math.sin(i*3)*.08,.86+Math.cos(i*2)*.07,.52],[x+Math.sin(i*2)*.10,.94+Math.cos(i)*.11,.48]],i%3===0?'#c7ec45':'#127f7d',.025,2)}
+// Studio: 3D platform and concentric metallic accent ring.
+add('environment',plinth,'#302a3c',5,[0,-1.02,0],[2.35,.12,2.35]);
+add('environment',plinth,'#665d77',4,[0,-.9,0],[2.22,.025,2.22]);
+add('environment',plinth,'#2e293b',5,[0,-.875,0],[2.12,.025,2.12]);
+// Real 3D cosmetics and room props: owned items are rendered in the WebGL scene.
+const hatPieces=[];
+function cosmetic(name,shape,color,mat,xyz,size){const v=add('cosmetic:'+name,shape,color,mat,xyz,size);hatPieces.push(v);return v}
+cosmetic('Tiny Beanie',globe,'#ffbd4f',2,[0,.96,0],[.80,.39,.44]);
+cosmetic('Tiny Beanie',roundedBox(1.57,.18,.82,.07,6),'#ef6847',2,[0,.86,0]);
+cosmetic('Tin Foil Hat',globe,'#c5d9ed',4,[0,1.02,0],[.76,.48,.47]);
+cosmetic('Tin Foil Hat',roundedBox(1.62,.08,.93,.04,6),'#d8e7f5',4,[0,.86,0]);
+cosmetic('Cowboy Hat',roundedBox(2.38,.10,1.44,.04,6),'#6d3e2e',1,[0,.92,0]);
+cosmetic('Cowboy Hat',globe,'#8a5c3c',1,[0,1.12,0],[.65,.42,.45]);
+cosmetic('Cowboy Hat',roundedBox(1.32,.10,.83,.04,5),'#e7ac6e',1,[0,1.02,0]);
+cosmetic('Velvet Throne',roundedBox(2.8,2.8,.28,.19,9),'#522a58',1,[0,-.04,-1.28]);
+cosmetic('Velvet Throne',roundedBox(2.5,.36,1.3,.11,9),'#a34f81',1,[0,-.81,-.85]);
+cosmetic('Velvet Throne',globe,'#ffcf75',4,[0,1.25,-1.25],[.20,.17,.17]);
+cosmetic('Therapy Couch',roundedBox(3,.38,1.2,.13,9),'#487a81',2,[0,-.86,-.85]);
+cosmetic('Therapy Couch',roundedBox(3,.85,.25,.12,9),'#38666a',2,[0,-.49,-1.47]);
+cosmetic('Cursed Candle',roundedBox(.27,.57,.27,.05,7),'#dcd3bf',1,[1.7,-.54,.10]);
+cosmetic('Cursed Candle',globe,'#ffae36',4,[1.7,-.12,.10],[.12,.22,.12]);
+const moods=['Baby Bricko','Demon Bricko','Psycho Bricko','King Bricko','Sad Bricko'];
+const setSkin=(skin)=>{state.skin=skin;s.skin=skin;save();document.querySelectorAll('[data-skin]').forEach(b=>{const active=b.dataset.skin===skin;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});document.getElementById('skinName').textContent=skin==='puppet'?'MUPPET-STYLE PUPPET':'REALISTIC HUMAN FACE';state.burst=performance.now();};
+document.querySelectorAll('[data-skin]').forEach(b=>b.addEventListener('click',()=>setSkin(b.dataset.skin)));
+setSkin(state.skin);
+function draw(obj,parent,vp,time,eye){let size=obj.size;const eyePart=['#f0dfcf','#86604c','#181416','#fef6e9','#fdf5e7','#262528','#fffefa'].includes(obj.hex);const lipPart=['#4b2725','#e9d7c8','#9b514e','#b56560','#a44d55','#211320','#fa778b','#ed6280'].includes(obj.hex);if(eyePart){const closing=Math.max(0,1-Math.abs(Math.sin(time*1.2+2))*14);size=[size[0],size[1]*(.13+.87*(1-closing)),size[2]]}if(lipPart&&performance.now()-state.burst<1000){size=[size[0],size[1]*(1+0.28*Math.abs(Math.sin(time*23))),size[2]]}const model=compose(parent,T(...obj.xyz),RZ(obj.rot),S(...size));gl.bindVertexArray(obj.shape.vao);gl.uniformMatrix4fv(loc.m,false,new Float32Array(model));gl.uniformMatrix4fv(loc.vp,false,new Float32Array(vp));gl.uniform3fv(loc.col,new Float32Array(obj.color));gl.uniform1f(loc.mat,obj.mat);gl.uniform1f(loc.time,time);gl.uniform1f(loc.mood, state.mood==='Demon Bricko'||state.mood==='Psycho Bricko'?1:0);gl.uniform3fv(loc.eye,new Float32Array(eye));gl.drawElements(gl.TRIANGLES,obj.shape.count,gl.UNSIGNED_SHORT,0)}
+function frame(ms){if(!canvas.isConnected)return;const t=ms*.001,delta=Math.min(.05,(ms-state.last)*.001||.016);state.last=ms;const width=Math.max(1,stage.clientWidth),height=Math.max(1,stage.clientHeight);const dpr=Math.min(window.devicePixelRatio||1,state.quality==='high'?2:1.15);const w=Math.min(1920,Math.round(width*dpr)),h=Math.min(1080,Math.round(height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);info.textContent='WEBGL 2 · '+w+' × '+h+' · 3D'}
+gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+const eye=[Math.sin(state.azimuth)*Math.cos(state.elevation)*state.zoom,1.1+Math.sin(state.elevation)*state.zoom,Math.cos(state.azimuth)*Math.cos(state.elevation)*state.zoom];const vp=mul(perspective(Math.PI/4.3,w/h,.08,100),look(eye,[0,-.06,0]));
+let elapsed=Math.max(0,(ms-state.burst)*.001);let bounce=elapsed<.55?Math.abs(Math.sin(elapsed*18))*.24*(1-elapsed/.55):0;
+let idle=.035*Math.sin(t*1.5),reactTime=(ms-state.reactionAt)*.001,quake=reactTime<.75?Math.sin(reactTime*43)*(1-reactTime/.75)*.15:0,spinKick=reactTime<1.2?Math.sin(Math.min(1,reactTime/1.2)*Math.PI)*Math.PI*2*(state.reaction==='poke'?1:0):0;let root=compose(T(0,bounce+idle+Math.abs(quake)*.14,0),RY(.06*Math.sin(t*.7)+state.turn+spinKick),RX(.014*Math.sin(t*1.8)+quake));
+for(const obj of parts){if(obj.group==='environment')draw(obj,I(),vp,t,eye);else if(obj.group==='all'||obj.group===state.skin)draw(obj,root,vp,t,eye);else if(obj.group==='cosmetic:'+s.equipped)draw(obj,['Tiny Beanie','Tin Foil Hat','Cowboy Hat'].includes(s.equipped)?root:I(),vp,t,eye)}
+requestAnimationFrame(frame)}
+canvas.addEventListener('pointerdown',e=>{state.drag=true;canvas.setPointerCapture(e.pointerId);state.px=e.clientX;state.py=e.clientY});canvas.addEventListener('pointermove',e=>{if(!state.drag)return;const dx=e.clientX-state.px,dy=e.clientY-state.py;state.px=e.clientX;state.py=e.clientY;state.azimuth=Math.max(-1.2,Math.min(1.2,state.azimuth+dx*.007));state.elevation=Math.max(-.55,Math.min(.65,state.elevation+dy*.006))});canvas.addEventListener('pointerup',()=>state.drag=false);canvas.addEventListener('pointercancel',()=>state.drag=false);
+canvas.addEventListener('wheel',e=>{e.preventDefault();state.zoom=Math.max(3.6,Math.min(8,state.zoom+Math.sign(e.deltaY)*.4))},{passive:false});
+document.getElementById('resetView').onclick=()=>{state.azimuth=-.17;state.elevation=.08;state.zoom=5.5};
+document.getElementById('fullscreenBrick').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else stage.requestFullscreen?.()};
+document.getElementById('qualityBrick').onclick=()=>{state.quality=state.quality==='high'?'performance':'high';document.getElementById('qualityBrick').textContent=state.quality==='high'?'1080p / HQ':'Performance'};
+const originalSpeak=speak;speak=function(line){originalSpeak(line);state.burst=performance.now();};
+const originalRender=render;render=function(){originalRender();state.mood=persona()};
+window.Bricko3D={react:(action)=>{state.reaction=action;state.reactionAt=performance.now();state.burst=performance.now();},setScene:(scene)=>{s.scene=scene;stage.dataset.scene=scene;},getStatus:()=>({webgl:true,skin:state.skin,scene:s.scene,equipped:s.equipped})};
+stage.dataset.scene=s.scene;let pointerStart=null;
+canvas.addEventListener('pointerdown',e=>{pointerStart={x:e.clientX,y:e.clientY,time:performance.now()}});
+canvas.addEventListener('pointerup',e=>{if(!pointerStart)return;let dist=Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y);pointerStart=null;if(dist>12)return;window.Bricko3D.react('poke');if(performance.now()-state.pokeAt<3800)return;state.pokeAt=performance.now();s.actions++;s.xp+=3;s.coins++;s.memories.unshift('Bricko was aggressively poked in the face.');s.memories=s.memories.slice(0,40);render();speak(pick(['Oi! Hands off the expensive masonry!','You poked a brick. Are you proud of yourself?','If you keep that up, I am calling a plasterer.','I have filed a formal complaint with the pavement.']));});
+info.textContent='WEBGL 2 · 3D active';requestAnimationFrame(frame);
+})();
+
+</script><script>
+(() => {'use strict';
+const $=id=>document.getElementById(id);
+const scenes=['studio','inferno','royal'];
+function showScene(scene){if(!scenes.includes(scene))return;s.scene=scene;document.getElementById('stage').dataset.scene=scene;document.querySelectorAll('[data-scene]').forEach(b=>b.classList.toggle('active',b.dataset.scene===scene));window.Bricko3D?.setScene(scene);save();}
+document.querySelectorAll('[data-scene]').forEach(b=>b.addEventListener('click',()=>{showScene(b.dataset.scene);window.Bricko3D?.react('scene');}));showScene(s.scene);
+// Lightweight celebratory particles rendered as DOM sprites, avoiding dependencies.
+const stage=$('stage');
+function burst(symbol='✦',count=9){const b=stage.getBoundingClientRect();for(let i=0;i<count;i++){const el=document.createElement('span');el.textContent=symbol;el.style.cssText=`position:absolute;z-index:3;left:${35+Math.random()*30}%;top:${40+Math.random()*20}%;pointer-events:none;font-size:${13+Math.random()*18}px;color:${['#ffd789','#fff','#ff99ba'][i%3]};filter:drop-shadow(0 2px 4px #000);transition:transform 1s ease-out,opacity 1s ease-out;opacity:1;`;stage.appendChild(el);requestAnimationFrame(()=>{el.style.transform=`translate(${Math.random()*290-145}px,${Math.random()*-150-30}px) rotate(${Math.random()*350}deg)`;el.style.opacity='0'});setTimeout(()=>el.remove(),1080)}}
+// Event sounds are synthesized locally and only start on a user gesture.
+let audioContext=null;
+function chime(f=420){try{audioContext ||= new (window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')audioContext.resume();const o=audioContext.createOscillator(),g=audioContext.createGain();o.type='sine';o.frequency.setValueAtTime(f,audioContext.currentTime);o.frequency.exponentialRampToValueAtTime(f*1.35,audioContext.currentTime+.11);g.gain.setValueAtTime(.07,audioContext.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+.17);o.connect(g).connect(audioContext.destination);o.start();o.stop(audioContext.currentTime+.18)}catch(e){}}
+// Action reactions are applied to the actual WebGL model, not just text.
+document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{window.Bricko3D?.react(b.dataset.act);if(['cuddle','praise','play'].includes(b.dataset.act)){burst('♥',7);chime(470)}else if(['scare','insult','chaos'].includes(b.dataset.act)){burst('✶',12);chime(180)}else{burst('✦',6);chime(330)};}));
+// Timing skill challenge: position based on elapsed real time, not frame count. One result per start.
+const track=$('reflexMarker'),btn=$('reflexButton'),status=$('reflexStatus');let active=false,start=0,raf=0,position=0;
+function updateBest(){$('bestReflex').textContent='BEST '+s.bestReflex+'%'}updateBest();
+function animate(now){if(!active)return;position=(Math.sin((now-start)*.0043-Math.PI/2)+1)/2;track.style.left=`calc(${(position*100).toFixed(3)}% - 3px)`;raf=requestAnimationFrame(animate)}
+btn.addEventListener('click',()=>{if(!active){active=true;start=performance.now();btn.textContent='STOP IT!';status.textContent='Hit the gold zone in the middle.';raf=requestAnimationFrame(animate);chime(500);return}
+active=false;cancelAnimationFrame(raf);btn.textContent='TRY AGAIN';let accuracy=Math.max(0,Math.round(100-Math.abs(position-.5)*200));let reward=accuracy>=76?Math.round(accuracy*.45):Math.round(accuracy*.12);let earnedXP=accuracy>=76?55:15;s.coins+=reward;s.xp+=earnedXP;s.bestReflex=Math.max(s.bestReflex,accuracy);s.memories.unshift('Reflex challenge: '+accuracy+'% accuracy, +'+reward+' coins.');s.memories=s.memories.slice(0,40);status.textContent=accuracy>=76?`NAILED IT! ${accuracy}% · +${reward} coins · +${earnedXP} XP`:`${accuracy}% · +${reward} coins · +${earnedXP} XP. Bricko is unimpressed.`;render();updateBest();window.Bricko3D?.react('play');burst(accuracy>=76?'★':'✦',accuracy>=76?20:5);chime(accuracy>=76?780:250);speak(accuracy>=76?pick(['Fucking hell, you have actual reflexes!','That was disturbingly competent. I hate it.','The brick council awards you one point.']):pick(['My nan has quicker reflexes, and she is a driveway.','Oh, dear. That was tragic.','Congratulations. You missed a stationary gold rectangle.']));});
+// A touch of life: quick feedback when the user earns a new personality.
+let previousPersona=persona();
+const previousRender=render;
+render=function(){previousRender();updateBest();const now=persona();if(now!==previousPersona){previousPersona=now;burst('✧',14);window.Bricko3D?.react('change')}};
+// Support switching skins and poking on touch screens; keyboard controls remain functional.
+document.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select,button'))return;if(e.key===' '){e.preventDefault();window.Bricko3D?.react('poke');burst('✦',4)}if(e.key.toLowerCase()==='r')$('resetView').click()});
+// Restore saved selection and discover achievements.
+showScene(s.scene);updateBest();
+})();
+</script></body></html>
