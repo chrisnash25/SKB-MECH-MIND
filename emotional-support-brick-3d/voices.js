@@ -1,3 +1,4 @@
+import { dialogue } from './dialogue.js';
 // Recorded natural character greetings, with an accessible fallback for unscripted dialogue.
 const recorded={
   cartoon:{hello:'./audio/bricko-greeting.wav'},
@@ -47,10 +48,22 @@ export function createVoices({getPlayer,onStart,onEnd}){
     v.onend=()=>{if(myToken===token)end()};v.onerror=()=>{if(myToken===token)end()};
     speechSynthesis.speak(v);
   }
+  let cursor=0;
+  const lastLines={cartoon:{},realistic:{}};
+  function varied(who,key){
+    const pool=dialogue[who]?.[key];
+    if(!pool?.length)return null;
+    const previous=lastLines[who][key];
+    const list=pool.filter(line=>line!==previous);
+    const text=list[(cursor++*7+pool.length)%list.length];
+    lastLines[who][key]=text;
+    return text;
+  }
   function speak(input,opts={}){
     const who=getPlayer().real?'realistic':'cartoon';
-    const key=opts.key|| (lines[who][input]?''+input:null);
-    const text=lines[who][key]||input;
+    const key=opts.key|| (lines[who][input]||dialogue[who]?.[input]?''+input:null);
+    const hasRecording=!!recorded[who]?.[key]&&opts.recorded!==false;
+    const text=(hasRecording?lines[who][key]:null)|| (key?varied(who,key):null)||lines[who][key]||input;
     cancel();const myToken=token;
     onStart?.(text,Math.max(1300,text.length*75));spokenAt=performance.now();
     const url=recorded[who][key];
@@ -62,5 +75,5 @@ export function createVoices({getPlayer,onStart,onEnd}){
     }else synth(text,who,myToken);
     return text;
   }
-  return {speak,cancel,lines,getCurrentVoice:()=>getPlayer().real?'Rusty':'Bricko',hasRecorded:key=>!!recorded[getPlayer().real?'realistic':'cartoon'][key],elapsed:()=>performance.now()-spokenAt};
+  return {speak,cancel,lines,dialogue,getCurrentVoice:()=>getPlayer().real?'Rusty':'Bricko',hasRecorded:key=>!!recorded[getPlayer().real?'realistic':'cartoon'][key],elapsed:()=>performance.now()-spokenAt};
 }
