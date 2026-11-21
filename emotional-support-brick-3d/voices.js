@@ -47,6 +47,7 @@ export function createVoices({getPlayer,onStart,onEnd}){
   function end(){onEnd?.()}
   function cancel(){token++;if(audio){audio.pause();audio.currentTime=0;audio=null}if('speechSynthesis' in window)speechSynthesis.cancel();end()}
   function synth(text,who,myToken){
+    const profile=VOICE_CAST[who]||VOICE_CAST.bricko;
     if(!('speechSynthesis' in window)){onEnd?.();return}
     const v=new SpeechSynthesisUtterance(text);v.lang='en-GB';v.rate=profile.rate;v.pitch=profile.pitch;
     const preferred=preferredVoices.filter(voice=>/en[-_]GB/i.test(voice.lang));
