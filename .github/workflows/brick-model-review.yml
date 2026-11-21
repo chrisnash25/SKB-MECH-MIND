@@ -3,6 +3,8 @@ on:
   push:
     paths: ['.github/workflows/brick-model-review.yml']
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   inspect:
     runs-on: ubuntu-24.04
@@ -18,3 +20,15 @@ jobs:
         with:
           name: bricko-generated-mesh
           path: BrickoSam.glb
+      - name: Record model download status
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        run: |
+          mkdir -p .build-reports
+          printf '{"status":"%s","run_id":"%s"}\n' "$STATUS" "$GITHUB_RUN_ID" > .build-reports/brick-model-review.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .build-reports/brick-model-review.json
+          git commit -m "Record generated brick mesh review status" || true
+          git push || true
