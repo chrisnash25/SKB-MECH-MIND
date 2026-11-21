@@ -1,0 +1,20 @@
+name: Inspect generated Bricko GLB
+on:
+  push:
+    paths: ['.github/workflows/brick-model-review.yml']
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download generated 3D brick model
+        run: |
+          curl -fL --retry 2 --max-time 90 -o BrickoSam.glb 'https://d8j0ntlcm91z4.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/hf_20261121_195759_a600eb0f-dc3d-460d-a2a1-a4c77cf81ffe.glb'
+          ls -lh BrickoSam.glb
+          python3 -c "assert open('BrickoSam.glb','rb').read(4)==b'glTF'"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bricko-generated-mesh
+          path: BrickoSam.glb
