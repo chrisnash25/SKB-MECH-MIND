@@ -2,7 +2,7 @@ name: Grand Theft Pigeon — Browser Screenshot Test
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/pigeon-browser-smoke.yml']
+    paths: ['pigeon/index.html']
   workflow_dispatch:
 permissions:
   contents: read
