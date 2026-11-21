@@ -59,7 +59,7 @@ jobs:
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
-          if(errors.length||!state.loaded||!state.webgl||state.frames<2||!state.models.cartoon?.loaded||!state.models.realistic?.loaded||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(errors.length||!state.loaded||!state.webgl||state.frames<2||!state.models.cartoon?.loaded||!state.models.realistic?.loaded||state.models.cartoon.meshes!==5||state.models.realistic.meshes!==5||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
