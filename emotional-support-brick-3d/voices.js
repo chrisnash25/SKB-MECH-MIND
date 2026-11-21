@@ -35,7 +35,15 @@ export function createVoices({getPlayer,onStart,onEnd}){
     const v=new SpeechSynthesisUtterance(text);v.lang='en-GB';v.rate=who==='cartoon'?1.02:.9;v.pitch=who==='cartoon'?1.09:.88;
     const preferred=preferredVoices.filter(voice=>/en[-_]GB/i.test(voice.lang));
     const pool=preferred.length?preferred:preferredVoices;
-    if(pool.length)v.voice=pool[who==='cartoon'?0:pool.length-1];
+    const rank=voice=>{
+      const name=voice.name.toLowerCase();
+      let n=/(natural|neural|online|premium|enhanced)/.test(name)?100:0;
+      n+=/british|united kingdom|en-gb|uk english/.test(name)?15:0;
+      if(who==='cartoon')n+=/maisie|libby|sonia|female|jenny|zara/.test(name)?30:0;
+      else n+=/ryan|thomas|george|male|daniel/.test(name)?30:0;
+      return n;
+    };
+    if(pool.length){const sorted=[...pool].sort((a,b)=>rank(b)-rank(a));v.voice=sorted[0];}
     v.onend=()=>{if(myToken===token)end()};v.onerror=()=>{if(myToken===token)end()};
     speechSynthesis.speak(v);
   }
