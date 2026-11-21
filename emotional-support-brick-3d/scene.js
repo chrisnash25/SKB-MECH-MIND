@@ -189,7 +189,7 @@ function select(id){
  document.getElementById('name').textContent=cast.name;
  for(const button of document.querySelectorAll('[data-brick-id]'))button.setAttribute('aria-pressed',String(button.dataset.brickId===cast.id));
  try{sessionStorage.setItem('esb-character',cast.id)}catch{}
- activities.stop();applyCastModel(player);applyCastModel(buddy);say('hello',{key:'hello',recorded:false});
+ activities.stop();applyCastModel(player);applyCastModel(buddy);say('hello',{key:'hello'});
 }
 
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
