@@ -17,15 +17,18 @@ jobs:
           curl -fL --retry 2 --max-time 90 -o RustySam.glb 'https://d8j0ntlcm91z4.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/hf_20261121_200253_9d046a11-75a5-4adc-8048-254742127857.glb'
           ls -lh BrickoSam.glb RustySam.glb
           python3 -c "assert open('BrickoSam.glb','rb').read(4)==b'glTF'"
+      - name: Create articulated character GLBs without texture loss
+        run: |
+          python3 -m pip install --disable-pip-version-check --quiet trimesh numpy pillow
+          mkdir -p emotional-support-brick-3d/assets
+          python3 emotional-support-brick-3d/rigify.py BrickoSam.glb emotional-support-brick-3d/assets/bricko.glb
+          python3 emotional-support-brick-3d/rigify.py RustySam.glb emotional-support-brick-3d/assets/rusty.glb
       - name: Add sculpted textured brick to browser game
         run: |
-          mkdir -p emotional-support-brick-3d/assets
-          cp BrickoSam.glb emotional-support-brick-3d/assets/bricko.glb
-          cp RustySam.glb emotional-support-brick-3d/assets/rusty.glb
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add emotional-support-brick-3d/assets/bricko.glb emotional-support-brick-3d/assets/rusty.glb
-          git commit -m "Add real textured 3D Bricko GLB model" || true
+          git commit -m "Commit five-part animated 3D Bricko and Rusty character assets" || true
           git fetch origin main
           git rebase origin/main
           git push
