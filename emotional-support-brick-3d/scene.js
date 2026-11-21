@@ -148,7 +148,7 @@ function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
-document.getElementById('name').textContent=real?'Rusty':'Bricko';try{sessionStorage.setItem('esb-character',real?'rusty':'bricko')}catch{}activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
+document.getElementById('name').textContent=real?'Rusty':'Bricko';document.getElementById('cartoon').setAttribute('aria-pressed',String(!real));document.getElementById('realistic').setAttribute('aria-pressed',String(real));try{sessionStorage.setItem('esb-character',real?'rusty':'bricko')}catch{}activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();
 if(/feed|biscuit|hungry|eat/.test(q)){activities.feed();return}
@@ -162,6 +162,7 @@ if(/what can we talk about|what should we talk about|have a chat/.test(q)){say('
 if(/nice work|well done|good job|i won/.test(q)){say('cheer',{key:'cheer'});return}
 if(/i lost|i failed|that was bad/.test(q)){say('oops',{key:'oops'});return}
 const answer=/joke|funny/.test(q)?"I went to a party last night. I was the cornerstone of the conversation.":/sad|lonely|upset/.test(q)?"I'm sorry. Want to tell me about it, or shall we play something together?":/name|who are you/.test(q)?(player.real?"I'm Rusty, a well-weathered brick with a surprisingly big heart.":"I'm Bricko, the friendliest brick in the building!"):/hello|hey|hi/.test(q)?"Hello again! Shall we have some fun?":/how are you/.test(q)?"Quite solid, thanks for asking. That's brick humour for you.":"I heard you say "+text+". We could try a game, a dance or a biscuit.";say(answer)}
+document.getElementById('cartoon').setAttribute('aria-pressed','true');document.getElementById('realistic').setAttribute('aria-pressed','false');
 document.getElementById('cartoon').onclick=()=>select(false);
 document.getElementById('realistic').onclick=()=>select(true);
 document.getElementById('interact').onclick=interact;
@@ -170,16 +171,16 @@ document.getElementById('jokeButton').onclick=()=>say('joke',{key:'joke'});
 document.getElementById('send').onclick=respond;
 document.getElementById('chatInput').onkeydown=e=>{if(e.key==='Enter')respond()};
 document.getElementById('mic').onclick=()=>{const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Rec){bubble.textContent='Microphone recognition is unavailable on this browser.';return}const rec=new Rec();rec.lang='en-GB';rec.onresult=e=>{document.getElementById('chatInput').value=e.results[0][0].transcript;respond()};rec.onerror=()=>bubble.textContent='Microphone unavailable. Try typing.';rec.start()};
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(e.code==='KeyE')interact()});
+addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','BUTTON'].includes(e.target.tagName)||e.target.isContentEditable)return;keys[e.code]=true;if(e.code==='KeyE')interact()});
 addEventListener('keyup',e=>keys[e.code]=false);
 world.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;world.setPointerCapture(e.pointerId)});
 world.addEventListener('pointermove',e=>{if(!drag)return;yaw-=(e.clientX-px)*.004;pitch=T.MathUtils.clamp(pitch+(e.clientY-py)*.003,-.2,.55);px=e.clientX;py=e.clientY});
-world.addEventListener('pointerup',()=>drag=false);
+world.addEventListener('pointerup',()=>drag=false);world.addEventListener('pointercancel',()=>drag=false);world.addEventListener('lostpointercapture',()=>drag=false);
 const stick=document.getElementById('stick'),nub=document.getElementById('nub');let pointer=null;
 stick.addEventListener('pointerdown',e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);moveStick(e)});
 stick.addEventListener('pointermove',e=>{if(pointer===e.pointerId)moveStick(e)});
 function moveStick(e){const r=stick.getBoundingClientRect();joy.set(T.MathUtils.clamp((e.clientX-r.left-r.width/2)/44,-1,1),T.MathUtils.clamp((e.clientY-r.top-r.height/2)/44,-1,1));nub.style.transform='translate('+joy.x*32+'px,'+joy.y*32+'px)'}
-stick.addEventListener('pointerup',()=>{pointer=null;joy.set(0,0);nub.style.transform=''});
+const releaseStick=()=>{pointer=null;joy.set(0,0);nub.style.transform=''};stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointercancel',releaseStick);stick.addEventListener('lostpointercapture',releaseStick);
 // Shoulder-safe locomotion: tiny arm swing and soft joint damping prevent the
 // whole brick silhouette from twisting like a stiff block while walking.
 function animateRig(c,time,isMoving,dt){
@@ -200,7 +201,11 @@ function animateRig(c,time,isMoving,dt){
 }
 
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.06,(now-last)/1000);last=now;clock+=dt;
-let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x,z=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y;
+const pads=navigator.getGamepads?.()||[],pad=Array.from(pads).find(Boolean);
+const axis=(i)=>Math.abs(pad?.axes?.[i]||0)>.18?(pad.axes[i]):0;
+if(pad){yaw-=axis(2)*dt*2.1;pitch=T.MathUtils.clamp(pitch+axis(3)*dt*1.1,-.2,.55);
+if(pad.buttons?.[0]?.pressed&&!keys._padA){keys._padA=true;interact()}else if(!pad.buttons?.[0]?.pressed)keys._padA=false;}
+let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+axis(0),z=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+axis(1);
 const movement=new T.Vector3(x,0,z),active=movement.length()>.12;
 if(active){movement.normalize().applyAxisAngle(new T.Vector3(0,1,0),yaw);player.root.position.addScaledVector(movement,dt*2);
 player.root.position.x=T.MathUtils.clamp(player.root.position.x,-6,6);player.root.position.z=T.MathUtils.clamp(player.root.position.z,-4.6,4.7);
