@@ -67,7 +67,7 @@ const o=new T.Object3D();let s=19;const rnd=()=>((s=(Math.imul(s,1664525)+101390
 for(let i=0;i<16000;i++){o.position.set(-2.8+rnd()*5.3,.084,-2.55+rnd()*3.9);o.rotation.set((rnd()-.5)*.4,0,(rnd()-.5)*.4);o.updateMatrix();tufts.setMatrixAt(i,o.matrix)}scene.add(tufts);
 block(scene,2,.12,1.0,wood,-3.6,.7,-2,.04);
 for(const x of [-4.43,-2.77])for(const z of [-2.37,-1.63])block(scene,.1,.65,.1,beam,x,.33,z);
-const bag=ellipsoid(scene,2,.35,-1.48,1.13,.42,.97,mat('#605b61'));
+const bag=ellipsoid(scene,1.3,.35,-1.25,1.13,.42,.97,mat('#605b61'));
 // Living-room dressing: dimensional plants, throws, ceramics, and a sleeping cat.
 const leafDark=mat('#3f6345'),leafMid=mat('#5f8155'),leafLight=mat('#789063');
 let plantSeed=2781;const randomLeaf=()=>((plantSeed=(Math.imul(plantSeed,1664525)+1013904223)>>>0)/4294967296);
@@ -98,7 +98,7 @@ for(let i=0;i<4;i++){const stripe=ellipsoid(scene,4.81+i*.16,1.51,-5.03,.045,.01
 ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
 
 let player=createCharacter(false);player.root.position.set(-.6,0,1.1);scene.add(player.root);
-let buddy=createCharacter(true);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+let buddy=createCharacter(true);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 // Production asset art pass: independently generated textured three-dimensional GLBs.
 const templates={cartoon:null,realistic:null};
 function dressWithModel(character,template){
@@ -124,11 +124,11 @@ loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;window.__brickMo
 }
 
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
-camera.position.set(1.0,3.3,5.05);camera.lookAt(-.6,1.05,1.1);
+camera.position.set(-.6,2.40,4.75);camera.lookAt(-.6,1.05,1.1);
 const keys={},joy=new T.Vector2(),world=document.getElementById('world'),bubble=document.getElementById('speech');
 function say(text){bubble.textContent=text;if('speechSynthesis'in window){speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(text);utter.lang='en-GB';utter.pitch=player.real?.8:1.15;utter.rate=player.real?.85:1.05;speakingUntil=performance.now()+text.length*65;speechSynthesis.speak(utter)}}
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
-scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!';refreshGeneratedModels()}
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();say(q.includes('joke')?'What does a brick eat? Nothing. We have no mouths really.':q.includes('sad')?'I am here with you. Want to talk about it?':'I heard you say '+text+'. I am still learning how to chat.')}
@@ -176,6 +176,6 @@ animateRig(player,clock,active);animateRig(buddy,clock+1.1,false);
 if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*.063:Math.sin(clock*1.6)*.014;player.model3d.rotation.z=active?Math.sin(clock*9)*.025:Math.sin(clock*.6)*.012;}
 if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
 const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
-camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*3.65,1.95+pitch*2.5,Math.cos(yaw)*3.65)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
+camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*3.65,1.15+pitch*2.3,Math.cos(yaw)*3.65)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
