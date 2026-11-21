@@ -1,0 +1,58 @@
+name: Grand Theft Pigeon — Browser Screenshot Test
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/pigeon-browser-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - name: Install Chromium
+        run: |
+          mkdir -p /tmp/pigeon-browser && cd /tmp/pigeon-browser
+          npm init -y >/dev/null
+          npm install playwright@1.58.2 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Load live 3D pigeon game
+        run: |
+          cat > /tmp/pigeon-browser/test.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
+            const page=await browser.newPage({viewport:{width:1280,height:720}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            let response;
+            for(let attempt=0;attempt<6;attempt++){
+              response=await page.goto('https://chrisnash25.github.io/SKB-MECH-MIND/pigeon/?v=bristol-3d-20261121',{waitUntil:'domcontentloaded',timeout:60000});
+              if(response.status()===200)break;
+              await page.waitForTimeout(8000);
+            }
+            console.log('PAGE_HTTP',response.status());
+            if(response.status()!==200)throw Error('Live game not yet published');
+            await page.waitForSelector('canvas',{timeout:20000});
+            await page.waitForTimeout(9000);
+            await page.keyboard.press('Enter');
+            await page.waitForTimeout(1600);
+            await page.keyboard.press('Space');
+            await page.waitForTimeout(3000);
+            const state=await page.evaluate(()=>({canvas:document.querySelector('canvas')?.getBoundingClientRect().toJSON(),webgl2:(()=>{try{return !!document.createElement('canvas').getContext('webgl2')}catch(e){return false}})(),title:document.title}));
+            console.log('PIGEON_BROWSER_STATE',JSON.stringify(state));
+            console.log('PIGEON_BROWSER_ERRORS',JSON.stringify(errors.slice(0,25)));
+            await page.screenshot({path:'/tmp/pigeon-live.png',timeout:15000});
+            if(!state.canvas||!state.webgl2||errors.some(e=>/context lost|Failed to fetch|out of memory/i.test(e)))throw Error('Browser runtime validation failed');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          EOF
+          timeout 110s node /tmp/pigeon-browser/test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: grand-theft-pigeon-live-screenshot
+          path: /tmp/pigeon-live.png
+          if-no-files-found: ignore
