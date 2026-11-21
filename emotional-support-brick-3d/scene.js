@@ -94,6 +94,7 @@ let buddy=createCharacter(true);buddy.seated=true;buddy.root.position.set(2,.18,
 const templates={cartoon:null,realistic:null};
 function dressWithModel(character,template){
 if(!template)return;
+if(character.model3d){character.root.remove(character.model3d);character.model3d=null;}
 const model=template.clone(true);
 model.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;}});
 const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());
