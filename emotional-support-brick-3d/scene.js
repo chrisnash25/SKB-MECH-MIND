@@ -1,5 +1,6 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
 const camera=new T.PerspectiveCamera(50,innerWidth/innerHeight,.1,80);
 const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true,preserveDrawingBuffer:new URLSearchParams(location.search).has('capture')});
@@ -89,12 +90,33 @@ ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
 
 let player=createCharacter(false);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 let buddy=createCharacter(true);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+// Production asset art pass: independently generated textured three-dimensional GLBs.
+const templates={cartoon:null,realistic:null};
+function dressWithModel(character,template){
+if(!template)return;
+const model=template.clone(true);
+model.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;}});
+const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());
+model.position.set(-center.x,-bounds.min.y,-center.z);
+const pivot=new T.Group();pivot.add(model);
+const scl=1.93/Math.max(size.x,.01);pivot.scale.setScalar(scl);
+character.root.add(pivot);character.model3d=pivot;character.body.visible=false;
+}
+function refreshGeneratedModels(){
+if(templates[player.real?'realistic':'cartoon'])dressWithModel(player,templates[player.real?'realistic':'cartoon']);
+if(templates[buddy.real?'realistic':'cartoon'])dressWithModel(buddy,templates[buddy.real?'realistic':'cartoon']);
+}
+const loader=new GLTFLoader();
+for(const [key,file] of [['cartoon','bricko.glb'],['realistic','rusty.glb']]){
+loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;refreshGeneratedModels();},undefined,e=>console.warn('Asset not ready; using fallback character',file,e));
+}
+
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
 const keys={},joy=new T.Vector2(),world=document.getElementById('world'),bubble=document.getElementById('speech');
 function say(text){bubble.textContent=text;if('speechSynthesis'in window){speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(text);utter.lang='en-GB';utter.pitch=player.real?.8:1.15;utter.rate=player.real?.85:1.05;speakingUntil=performance.now()+text.length*65;speechSynthesis.speak(utter)}}
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
-document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!'}
+document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!';refreshGeneratedModels()}
 function interact(){say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();say(q.includes('joke')?'What does a brick eat? Nothing. We have no mouths really.':q.includes('sad')?'I am here with you. Want to talk about it?':'I heard you say '+text+'. I am still learning how to chat.')}
 document.getElementById('cartoon').onclick=()=>select(false);
@@ -122,6 +144,8 @@ player.root.position.x=T.MathUtils.clamp(player.root.position.x,-6,6);player.roo
 player.root.rotation.y=T.MathUtils.lerp(player.root.rotation.y,Math.atan2(movement.x,movement.z),.14)}
 animateCharacter(player,clock,dt,active,now<speakingUntil);
 animateCharacter(buddy,clock+1.1,dt,false,false);
+if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*.063:Math.sin(clock*1.6)*.014;player.model3d.rotation.z=active?Math.sin(clock*9)*.025:Math.sin(clock*.6)*.012;}
+if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
 const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
 camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*3.65,1.95+pitch*2.5,Math.cos(yaw)*3.65)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
