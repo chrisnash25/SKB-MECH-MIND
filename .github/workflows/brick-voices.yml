@@ -1,0 +1,39 @@
+name: Install Brick Character Voices
+on:
+  push:
+    paths: ['.github/workflows/brick-voices.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download character voice recordings
+        run: |
+          set -euo pipefail
+          mkdir -p emotional-support-brick-3d/audio
+          curl -fLSs --retry 3 --max-time 75 -o emotional-support-brick-3d/audio/bricko-greeting.wav 'https://d8j0ntlcm91z4.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/hf_20261121_202721_0dcc78d4-5a52-414a-a68e-876e824c44ec.wav'
+          curl -fLSs --retry 3 --max-time 75 -o emotional-support-brick-3d/audio/rusty-greeting.mp3 'https://d8j0ntlcm91z4.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/hf_20261121_202519_922c868a-1691-4089-bd91-9baa4dc97726.mp3'
+          curl -fLSs --retry 3 --max-time 75 -o emotional-support-brick-3d/audio/bricko-alternate.mp3 'https://d8j0ntlcm91z4.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/hf_20261121_202515_b526fd5b-cd2a-4da4-9e16-9a26f45cceda.mp3'
+          test "$(wc -c < emotional-support-brick-3d/audio/bricko-greeting.wav)" -gt 1000
+          test "$(wc -c < emotional-support-brick-3d/audio/rusty-greeting.mp3)" -gt 1000
+          file emotional-support-brick-3d/audio/*
+      - name: Commit voices into the browser game
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add emotional-support-brick-3d/audio
+          git diff --cached --quiet && exit 0
+          git commit -m 'Install character-recorded dialogue clips'
+          git fetch origin main
+          git rebase origin/main
+          git push origin main
+      - name: Upload voice samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brick-voice-files
+          path: emotional-support-brick-3d/audio/
