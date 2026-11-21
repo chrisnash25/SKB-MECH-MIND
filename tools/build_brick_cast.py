@@ -17,7 +17,11 @@ CAST=[
 def material(name,color,rough=.48,metal=0,emission=None):
  m=bpy.data.materials.new(name);m.diffuse_color=(*color,1);m.use_nodes=True
  p=m.node_tree.nodes.get('Principled BSDF');p.inputs['Base Color'].default_value=(*color,1);p.inputs['Roughness'].default_value=rough;p.inputs['Metallic'].default_value=metal
- if emission:p.inputs['Emission Color'].default_value=(*emission,1);p.inputs['Emission Strength'].default_value=.5
+ if emission:
+  emission_input=p.inputs.get('Emission Color') or p.inputs.get('Emission')
+  strength_input=p.inputs.get('Emission Strength')
+  if emission_input:emission_input.default_value=(*emission,1)
+  if strength_input:strength_input.default_value=.5
  return m
 def cube(name,loc,scale,mat,bevel=.07):
  bpy.ops.mesh.primitive_cube_add(size=1,location=loc);o=bpy.context.object;o.name=name;o.dimensions=scale;bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
