@@ -2,7 +2,7 @@ name: Bricko 3D — WebGL and Face Skin Screenshot Test
 on:
   push:
     branches: [main]
-    paths: ['brick/index.html']
+    paths: ['brick/index.html', '.github/workflows/brick-3d-browser-test.yml']
   workflow_dispatch:
 permissions:
   contents: read
