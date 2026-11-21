@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Talk to Your Brick · Emotional Support</title><meta name="theme-color" content="#5b4638">
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:linear-gradient(130deg,#5b4539,#876c58 55%,#665347);font-family:system-ui,Arial,sans-serif;color:#30231b}
+main{max-width:790px;margin:0 auto;padding:14px 12px 30px}article{background:#f5ecdd;border:1px solid #dfc8a7;border-radius:18px;padding:clamp(15px,3vw,25px);box-shadow:0 12px 35px #24130d70}
+header{display:flex;gap:12px;align-items:center;justify-content:space-between}h1{font:700 clamp(25px,4vw,36px) Georgia,serif;line-height:1.08;margin:0}h2{font:700 22px Georgia,serif;margin:12px 0 6px}
+p{line-height:1.5}small{font-size:12px;color:#675445}
+a{color:#50362a}button{border:1px solid #a58a6b;background:#e7d2b5;border-radius:9px;padding:10px 12px;color:#35271d;font:600 13px system-ui;cursor:pointer}button:hover{background:#f7dfbd}button:focus-visible,textarea:focus-visible{outline:3px solid #a47950}#who{display:flex;align-items:center;gap:9px;background:#e7d9c6;border-radius:10px;padding:10px;margin:13px 0}#portrait{font-size:28px}#chat{height:clamp(185px,34dvh,330px);overflow:auto;background:#e9ddcd;border:1px solid #d4bda2;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}#chat .msg{font-size:14px;line-height:1.46;max-width:93%;white-space:pre-wrap;padding:9px 12px;border-radius:11px}#chat .brick{align-self:flex-start;background:#fffaf2;border:1px solid #dfcbb4}#chat .you{align-self:flex-end;background:#d7e5d9}#quick{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}#editor{display:flex;gap:8px}textarea{flex:1;min-width:0;resize:vertical;max-height:115px;border:1px solid #b29b7d;border-radius:8px;padding:10px;font:15px system-ui;color:#302219;background:#fffdfa}#editor button{align-self:flex-end}#tools{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0 5px}#activity{background:#e9dfd0;padding:12px;border-radius:11px;line-height:1.6;margin-top:11px}#activity[hidden],#urgent[hidden]{display:none}#urgent{margin:10px 0;padding:13px;background:#fff1df;border:1px solid #be9676;border-radius:9px;line-height:1.5}footer{font-size:12px;margin-top:14px;color:#695445}label{display:block;margin:8px 0 4px}#clear{margin-left:auto}@media(max-width:460px){article{border-radius:10px}#chat{height:31dvh}#who{padding:7px}#quick button,#tools button{font-size:11px;padding:7px}#editor button{padding:10px}}
+</style></head><body><main><article>
+<header><div><small>EMOTIONAL SUPPORT BRICK</small><h1>A moment with your brick</h1></div><a href="./">Back to game</a></header>
+<p>This is a supportive conversation and wellbeing space—not professional therapy or crisis care. You can talk, check in on your mood and try simple calming activities.</p>
+<div id="who"><span id="portrait" aria-hidden="true">▣</span><span>Talking with <strong id="name">Bricko</strong><small style="display:block">Here to listen, one step at a time</small></span><button id="switch" style="margin-left:auto">Switch brick</button></div>
+<div id="chat" role="log" aria-live="polite" aria-label="Your support conversation"></div>
+<div id="urgent" hidden role="alert"></div>
+<div id="quick" aria-label="Conversation suggestions"></div>
+<form id="editor"><textarea id="message" rows="2" maxlength="700" placeholder="Tell your brick how you feel…" aria-label="Message"></textarea><button type="submit">Send</button></form>
+<h2>Take care of yourself</h2>
+<div id="tools"><button id="breathe">Slow breathing</button><button id="ground">5–4–3–2–1 grounding</button><button id="step">One small step</button><button id="clear">Clear chat</button></div>
+<div id="activity" hidden></div>
+<footer>Your typed conversation stays on this page and is not sent to a chatbot server or saved as chat history. The optional browser voice may sound synthetic. If something is serious or ongoing, consider speaking with a trusted adult, GP or qualified professional.</footer>
+</article></main>
+<script>
+const p=new URLSearchParams(location.search);let rusty=p.get('brick')==='rusty'||sessionStorage.getItem('esb-character')==='rusty';
+const $=id=>document.getElementById(id),chat=$('chat'),quick=$('quick'),activity=$('activity'),urgent=$('urgent'),field=$('message');
+let used=[],counter=0,active='',raf=0;
+const sets={
+bricko:{
+welcome:["Hey! You can say what's on your mind. There's no pressure to get it right.","Thanks for dropping by. Would you like to talk about how today has been?","Let's have a quiet moment. What's been happening?"],
+sad:["I'm sorry that things feel difficult. What happened?","You don't need to fix everything at once. What's the hardest part today?","I'm glad you told me. Would listening or a calming exercise help?","A tough day doesn't have to be a permanent one. What might make this hour easier?"],
+worry:["That sounds stressful. Let's focus on what is within your control.","Worry can be loud. What's one thing you know for certain?","If you're anxious, we can try a short grounding exercise.","We can take it one step at a time. What's worrying you most?"],
+lonely:["Loneliness can hurt. Is there someone safe you could reach out to?","You deserve real connections too. Who helps you feel understood?","Maybe a little message to someone you trust could be a start."],
+anger:["That sounds frustrating. What part upset you most?","It's okay to feel angry. You can choose what to do next after a pause.","What boundary or need feels like it was missed?"],
+grief:["I'm sorry for your loss. There's no timetable for grief.","Would you like to share a kind memory of the person or pet you're missing?","Missing someone can come in waves. Is there a trusted person who could sit with you?"],
+confidence:["You can be nervous and still give something a go.","What's one small bit you could try today?","What encouraging thing would you say to a friend in your situation?"],
+tired:["That sounds exhausting. Is a short break possible?","Rest isn't wasted time. What could wait for tomorrow?","Perhaps some food, water or quiet time would help."],
+happy:["That's wonderful! What's the best part?","I love hearing good news. What made you smile?","You can take a moment to enjoy that."],
+general:["I'm listening. What matters most to you about that?","Would you like me to listen or help you consider a small next step?","That sounds worth talking through. What happened next?","We don't have to do everything at once. What feels most important now?","What would make you feel a little more supported today?"],
+jokes:["I asked my builder for a day off. He said I was already laid up!","I tried yoga. Turns out I'm good at holding a position.","My friends say I'm dependable. I'm the cornerstone of their lives.","I'm not stubborn. I'm just set in my ways.","My therapist said I need to open up. Bit difficult, I'm solid clay.","Why was the wall so calm? It had excellent support.","I wanted to be a musician, but all I knew was rock music.","I'm a brick with boundaries. They're load-bearing!"]
+},
+rusty:{
+welcome:["Alright, mate. Fancy a chat? No rush.","Pull up a seat. What's going on in your world?","No need to put on a brave face. What's on your mind?"],
+sad:["Sounds like a rough one. Sorry you're going through that.","Let's deal with one thing at a time, not the whole lot.","I'm listening. What's been particularly difficult?","You deserve a bit of kindness, especially from yourself."],
+worry:["When your head's racing, everything can feel twice the size.","What's actually happening now, and what's only a possibility?","Steady on. We could try a grounding exercise first.","What's one thing you can do about this today?"],
+lonely:["That's a rough feeling. Is there someone you can safely check in with?","You deserve real company, mate. Who has listened well before?","Even a short hello to someone you trust might help."],
+anger:["Sounds like you've had your patience tested. What's the main issue?","Before you respond, give yourself some space.","Anger may point to something important. What feels unfair?"],
+grief:["I'm sorry for your loss, mate. That's a heavy thing.","Grief isn't a job you have to finish by Friday.","Want to tell me something you remember fondly about them?"],
+confidence:["You don't need a perfect plan, just a first decent step.","Might be you're being harder on yourself than you deserve.","Good on you for trying, even if it's uncomfortable."],
+tired:["Running on empty, are you? Rest isn't a luxury.","One thing at a time. What can wait?","Have a breather if you can. Nobody's made of steel. I'm made of clay."],
+happy:["Well, that's lovely news!","Good on you. What are you proud of?","Take the win, mate. You deserve to enjoy it."],
+general:["Go on, mate. I'm listening.","What's the part that really matters here?","Would it help to break it down into something manageable?","What sort of support would be useful right now?","Is there someone you trust who could help with this too?"],
+jokes:["I went to the gym. They said I should work on my core. I've got a solid one.","My builder told me to loosen up. Sorry, mate, the mortar's set.","I went speed dating. Everyone said I was too much of a commitment.","Never argue with a bricklayer. They've always got a point to lay.","A house called me boring. I said at least I have foundations.","I can't dance the tango, but I can do the brick step.","I went to a comedy club. Total wall-to-wall laughter.","I've been around the block. Mostly because I am one."]
+}};
+function pick(a){const rest=a.filter(x=>!used.includes(x));const v=(rest.length?rest:a)[counter++%(rest.length||a.length)];used.push(v);if(used.length>6)used.shift();return v}
+function speaker(){return rusty?'Rusty':'Bricko'}
+function line(who,text){const el=document.createElement('div');el.className='msg '+(who==='You'?'you':'brick');el.textContent=(who==='You'?'':speaker()+': ')+text;chat.append(el);chat.scrollTop=chat.scrollHeight}
+function say(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-GB';u.pitch=rusty?.85:1.08;u.rate=rusty?.9:1.02;speechSynthesis.speak(u)}
+function answer(text,speak=true){line('Brick',text);if(speak)say(text)}
+function options(entries){quick.replaceChildren();for(const [label,action] of entries){const b=document.createElement('button');b.textContent=label;b.type='button';b.onclick=action;quick.append(b)}}
+function initial(){options([['Feeling low',()=>mood('sad')],['Anxious',()=>mood('worry')],['Lonely',()=>mood('lonely')],['Angry',()=>mood('anger')],['Feeling good',()=>mood('happy')],['Tell me a joke',joke],['Just chat',()=>{answer("Of course. I'm listening. What's happening?");field.focus()}]])}
+function mood(type){answer(pick(sets[rusty?'rusty':'bricko'][type]));options([['Tell you more',()=>{answer("Take your time. What happened?");field.focus()}],['Calming exercise',breathing],['One small step',plan],['Other feelings',initial]])}
+function joke(){answer(pick(sets[rusty?'rusty':'bricko'].jokes));options([['Another joke',joke],['Talk instead',initial]])}
+const risk=/\b(suicid(?:e|al)|kill myself|end my life|want to die|better off dead|hurt myself|self[- ]?harm|cut myself|overdose|don't want to live|do not want to live|not safe with myself)\b/i;
+const imminent=/\b(right now|tonight|already|took|taking|going to|plan to|about to|can't stay safe|cannot stay safe)\b/i;
+function crisis(text){const immediate=imminent.test(text);urgent.hidden=false;urgent.innerHTML=immediate?
+"<strong>If you may be in immediate danger, call 999 or go to A&amp;E now.</strong> Tell a trusted person near you. For urgent non-emergency mental health help in England, call NHS 111 and choose the mental health option. <a href='https://www.nhs.uk/nhs-services/mental-health-services/where-to-get-urgent-help-for-mental-health/' target='_blank' rel='noopener'>NHS advice</a>.":
+"<strong>You deserve human support.</strong> UK: Samaritans <a href='tel:116123'>116 123</a>; text <strong>SHOUT</strong> to <strong>85258</strong>. Under 19? Childline <a href='tel:08001111'>0800 1111</a>. In England, NHS 111 offers urgent mental health support. Call 999 if in immediate danger.";
+answer(immediate?"I'm worried you may be in danger. Please contact emergency help or someone safe near you right now.":"Thank you for telling me. Your safety matters. I can listen, but I can't provide crisis care. Please reach out to a trusted person or professional service.",false);
+options([['Help me ask someone',()=>answer("You could say: I'm not feeling safe and I need support right now.",false)],['Show support details',()=>urgent.hidden=false]])}
+function classify(s){const rules=[['grief',/\b(grief|grieving|died|death|passed away|lost my (mum|dad|friend|pet))\b/i],['lonely',/\b(lonely|alone|isolat|left out|no friends)\b/i],['anger',/\b(angry|furious|rage|annoyed|frustrat|argument)\b/i],['worry',/\b(anxi|panic|worried|worry|scared|afraid|stress|overthink|nervous|overwhelm)\b/i],['sad',/\b(sad|down|depress|upset|cry|miserable|heartbroken|hopeless)\b/i],['tired',/\b(tired|exhaust|burnout|no energy)\b/i],['confidence',/\b(fail|useless|worthless|can't do|embarrass|confiden)\b/i],['happy',/\b(happy|excited|great|wonderful|good news|proud|grateful)\b/i]];for(const [k,p] of rules)if(p.test(s))return k;return 'general'}
+function reply(){const message=field.value.trim().slice(0,700);if(!message)return;line('You',message);field.value='';urgent.hidden=true;
+if(risk.test(message)){crisis(message);return}
+if(/\b(joke|laugh|funny)\b/i.test(message)){joke();return}
+if(/\b(breath|calm me)\b/i.test(message)){breathing();return}
+const type=classify(message);answer(pick(sets[rusty?'rusty':'bricko'][type]));
+options([['Talk more',()=>{answer("What's the hardest part?");field.focus()}],['Try grounding',grounding],['One small step',plan],['Another topic',initial]])}
+function stop(){active='';if(raf)cancelAnimationFrame(raf);raf=0;activity.hidden=true}
+function breathing(){stop();active='breath';const start=performance.now();activity.hidden=false;activity.innerHTML="<strong>Slow breathing · one minute</strong><p id='cue'>Gently breathe in</p><p>If it feels uncomfortable, return to normal breathing.</p><button id='stopExercise'>Finish</button>";$('stopExercise').onclick=()=>{stop();answer("You took time to pause. How do you feel now?")};
+function frame(t){if(active!=='breath')return;const elapsed=(t-start)/1000;$('cue').textContent=elapsed%10<4?'Gently breathe in · 4 seconds':'Slowly breathe out · 6 seconds';if(elapsed>60){stop();answer("That was a calming minute. What's on your mind now?");return}raf=requestAnimationFrame(frame)}raf=requestAnimationFrame(frame)}
+function grounding(){stop();active='ground';activity.hidden=false;const steps=['Notice 5 things you can see.','Notice 4 things you can feel.','Notice 3 sounds you can hear.','Notice 2 smells, if possible.','Notice 1 taste or one slow breath.'];let n=0;activity.innerHTML="<strong>5–4–3–2–1 grounding</strong><p id='cue'></p><button id='next'>Next</button><button id='stopExercise'>Finish</button>";$('cue').textContent=steps[0];$('next').onclick=()=>{n++;if(n>=steps.length){stop();answer("You gave yourself a moment to reconnect with the present.")}else $('cue').textContent=steps[n]};$('stopExercise').onclick=stop}
+function plan(){stop();active='plan';activity.hidden=false;activity.innerHTML="<strong>One manageable step</strong><p>What is one small, kind thing you could do next?</p><input id='stepInput' maxlength='130' style='width:100%;padding:8px' placeholder='e.g. text a trusted person'><button id='stepDone'>That's my step</button><button id='stopExercise'>Cancel</button>";$('stepDone').onclick=()=>{const t=$('stepInput').value.trim();if(t){stop();answer("One small step: "+t+". You can take it at your own pace.")}};$('stopExercise').onclick=stop}
+function reset(){chat.replaceChildren();urgent.hidden=true;used=[];stop();answer(pick(sets[rusty?'rusty':'bricko'].welcome),false);initial()}
+$('switch').onclick=()=>{rusty=!rusty;sessionStorage.setItem('esb-character',rusty?'rusty':'bricko');$('name').textContent=speaker();reset()};
+$('editor').addEventListener('submit',e=>{e.preventDefault();reply()});
+field.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();reply()}});
+$('breathe').onclick=breathing;$('ground').onclick=grounding;$('step').onclick=plan;$('clear').onclick=reset;
+$('name').textContent=speaker();reset();
+window.__supportQA={classify,crisis,reply,risk,mood,joke,reset,getMessageCount:()=>chat.children.length};
+</script></article></main></body></html>
