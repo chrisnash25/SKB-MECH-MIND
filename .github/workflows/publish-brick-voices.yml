@@ -1,0 +1,44 @@
+name: Publish recorded character voices
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/publish-brick-voices.yml'
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download ten individually generated speech recordings
+        run: |
+          mkdir -p emotional-support-brick-3d/audio/cast
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/80b17a1be1594e578b92c0ddf4a37fc8/id=cb447b5423b14d02894b89855fc15033.mp3' -o emotional-support-brick-3d/audio/cast/bricko-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/b5c5b28db1ea408abc7d851202983bdb/id=bd95967a63b44fa4afdc921a469ad2a8.mp3' -o emotional-support-brick-3d/audio/cast/rusty-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/3a9207e83f88414699ef99a007c4c550/id=ba8b786d3636455ab20348dc6faec709.mp3' -o emotional-support-brick-3d/audio/cast/pulse-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/84bc506c91674034aa1d32e22903f627/id=f535dc597a834eecb269027800bdfe08.mp3' -o emotional-support-brick-3d/audio/cast/calm-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/95d52e056b7b495dab8f090b44fa2ec4/id=7c175e53957844049d7f2d926b22a6a8.mp3' -o emotional-support-brick-3d/audio/cast/spark-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/b50db2127b854791b6e16815c3e9b824/id=08a490d492db474b83d9e1bda7e4c062.mp3' -o emotional-support-brick-3d/audio/cast/blocky-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/776f9d2ff401499a8f1f2bcb4ca46004/id=d838944d9ad14234859e1a51ece01366.mp3' -o emotional-support-brick-3d/audio/cast/cozy-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/c30ecab014cb4a8d816d07f6b2b625c8/id=f7e5f8d0de9a482b9d5203965034badb.mp3' -o emotional-support-brick-3d/audio/cast/zapp-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/707bf8ae1794471f9126e12310a16dff/id=e4a519f53e4d47a39d9d001697272646.mp3' -o emotional-support-brick-3d/audio/cast/echo-hello.mp3
+          curl --fail --location --retry 2 --silent --show-error 'https://resource2.heygen.ai/text_to_speech/8c1a73d9ea5040c9b1cebb764a99c86c/eae6fca42aae4b78b992533e96ab43c9/id=ba0c71fc2d994693acb853e60d167682.mp3' -o emotional-support-brick-3d/audio/cast/gizmo-hello.mp3
+      - name: Validate real MP3 audio
+        run: |
+          python3 - <<'PY'
+          import glob
+          paths=glob.glob('emotional-support-brick-3d/audio/cast/*-hello.mp3')
+          assert len(paths)==10,paths
+          for p in paths:
+              data=open(p,'rb').read()
+              assert len(data)>2000 and (data.startswith(b'ID3') or data[0]==255),p
+          print('Validated 10 separate character recordings')
+          PY
+      - name: Commit audio to GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add emotional-support-brick-3d/audio/cast
+          git diff --cached --quiet || (git commit -m "Publish ten distinct recorded character voices" && git pull --rebase && git push)
