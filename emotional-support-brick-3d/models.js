@@ -25,7 +25,8 @@ const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;tex.wrapS=
 }
 export function createCharacter(real=false){
 const root=new T.Group(),body=new T.Group();root.add(body);
-const red=mat('#ffffff',real?.96:.85,{map:brickTexture(real)});
+const surface=brickTexture(real);
+const red=mat('#ffffff',real?.98:.87,{map:surface,bumpMap:surface,bumpScale:real?.034:.013});
 const black=mat('#211e20'),glove=mat('#f6efe8',.45),sneaker=mat(real?'#9b733e':'#cc3e35',.55),sole=mat('#ece6de',.85);
 const white=mat('#fff9f5',.12),iris=mat(real?'#292426':'#347aa2',.13),pink=mat('#e88b92',.62),mouthmat=mat('#461f25',.87);
 const brick=object(body,rounded(1.75,1.12,.69,real?.18:.15),red,0,1.2,0);
@@ -50,6 +51,7 @@ ellipsoid(leg,0,-.20,0,.11,.28,.12,black);
 ellipsoid(leg,0,-.49,.18,.22,.18,.34,sneaker);
 block(leg,.48,.10,.72,sole,0,-.63,.2,.045);
 ellipsoid(leg,0,-.5,.46,.2,.08,.13,real?mat('#c4a17c'):sole);
+const trim=tube(leg,[[-.22,-.61,-.09],[-.22,-.62,.48],[0,-.62,.56],[.22,-.62,.48],[.22,-.61,-.09]],.014,real?mat('#503a2d'):mat('#eee2dd'));
 for(let k=0;k<3;k++)tube(leg,[[-.11,-.4+k*.039,.17+k*.046],[.11,-.4+k*.039,.17+k*.046]],.011,sole);
 }
 const mouth=new T.Group();body.add(mouth);mouth.position.set(0,1.03,.387);
