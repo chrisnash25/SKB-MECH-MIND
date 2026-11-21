@@ -1,16 +1,23 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
-const camera=new T.PerspectiveCamera(59,innerWidth/innerHeight,.1,80);
+const camera=new T.PerspectiveCamera(50,innerWidth/innerHeight,.1,80);
 const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true,preserveDrawingBuffer:new URLSearchParams(location.search).has('capture')});
 renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
-renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
-scene.add(new T.HemisphereLight('#fff5e7','#837467',2.2));
-const sun=new T.DirectionalLight('#ffddb5',3.5);sun.position.set(-4,8,4);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+scene.add(new T.HemisphereLight('#fff5e7','#837467',1.2));
+const sun=new T.DirectionalLight('#ffddb5',2.8);sun.position.set(-4,8,4);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=9;sun.shadow.camera.bottom=-9;sun.shadow.radius=4;scene.add(sun);
-const amber=new T.PointLight('#ffca8c',30,8);amber.position.set(-4,3,-4);scene.add(amber);
-const wood=mat('#795742'),beam=mat('#51372b'),wall=mat('#a99282'),stone=mat('#975b45'),sofa=mat('#70696f'),cream=mat('#c6b69f');
+const amber=new T.PointLight('#ffca8c',14,8);amber.position.set(-4,3,-4);scene.add(amber);
+function fabricTexture(base){
+const c=document.createElement('canvas');c.width=c.height=256;const ctx=c.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
+let state=71523;const random=()=>((state=(Math.imul(state,1664525)+1013904223)>>>0)/4294967296);
+for(let i=0;i<12000;i++){const x=random()*256,y=random()*256;ctx.fillStyle=random()>.5?'#ffffff18':'#00000018';ctx.fillRect(x,y,1.8,1.8);}
+const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(2,2);t.colorSpace=T.SRGBColorSpace;return t;
+}
+const wood=mat('#6e4833'),beam=mat('#493126'),wall=mat('#a58a76'),stone=mat('#975b45'),
+sofa=mat('#ffffff',1,{map:fabricTexture('#655d64')}),cream=mat('#ffffff',1,{map:fabricTexture('#a9957d'),bumpScale:.005});
 block(scene,15,.25,13,wood,0,-.2,-1);
 for(let i=0;i<37;i++){const color=mat(new T.Color().setHSL(.07,.2,.31+(i%7)*.013));block(scene,.38,.04,13,color,-7.3+i*.4,-.055,-1,.005)}
 block(scene,15,7.3,.18,wall,0,3.5,-7.5);
@@ -45,9 +52,9 @@ for(let i=0;i<5;i++)block(scene,2.5,.11,.56,wood,-5.5,.5+i*.68,-6.75);
 for(const x of [-6.75,-4.25])block(scene,.13,3.4,.6,beam,x,1.78,-6.75);
 for(let row=0;row<4;row++)for(let i=0;i<11;i++){const x=-6.63+i*.2;block(scene,.13,.37+(i%3)*.06,.32,mat(['#847360','#ad8772','#64756b','#756d78'][i%4]),x,.76+row*.68,-6.7,.01)}
 const carpet=block(scene,5.5,.09,4.1,cream,-.2,.03,-.55,.12);
-const tuftGeom=new T.ConeGeometry(.012,.11,3),tuftMat=mat('#d3c3a7');const tufts=new T.InstancedMesh(tuftGeom,tuftMat,3200);
+const tuftGeom=new T.ConeGeometry(.008,.052,3),tuftMat=mat('#bfae92');const tufts=new T.InstancedMesh(tuftGeom,tuftMat,16000);
 const o=new T.Object3D();let s=19;const rnd=()=>((s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296);
-for(let i=0;i<3200;i++){o.position.set(-2.8+rnd()*5.3,.105,-2.55+rnd()*3.9);o.rotation.set((rnd()-.5)*.4,0,(rnd()-.5)*.4);o.updateMatrix();tufts.setMatrixAt(i,o.matrix)}scene.add(tufts);
+for(let i=0;i<16000;i++){o.position.set(-2.8+rnd()*5.3,.084,-2.55+rnd()*3.9);o.rotation.set((rnd()-.5)*.4,0,(rnd()-.5)*.4);o.updateMatrix();tufts.setMatrixAt(i,o.matrix)}scene.add(tufts);
 block(scene,2,.12,1.0,wood,-3.6,.7,-2,.04);
 for(const x of [-4.43,-2.77])for(const z of [-2.37,-1.63])block(scene,.1,.65,.1,beam,x,.33,z);
 const bag=ellipsoid(scene,2,.35,-1.48,1.13,.42,.97,mat('#605b61'));
@@ -114,6 +121,6 @@ player.root.rotation.y=T.MathUtils.lerp(player.root.rotation.y,Math.atan2(moveme
 animateCharacter(player,clock,dt,active,now<speakingUntil);
 animateCharacter(buddy,clock+1.1,dt,false,false);
 const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
-camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*4.4,2.3+pitch*3,Math.cos(yaw)*4.4)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
+camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*3.65,1.95+pitch*2.5,Math.cos(yaw)*3.65)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
