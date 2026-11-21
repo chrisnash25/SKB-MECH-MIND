@@ -130,7 +130,7 @@ camera.position.set(-.6,2.40,4.75);camera.lookAt(-.6,1.05,1.1);
 const keys={},joy=new T.Vector2(),world=document.getElementById('world'),bubble=document.getElementById('speech');
 const voiceSystem=createVoices({getPlayer:()=>player,onStart:(text,duration)=>{bubble.textContent=text;speakingUntil=performance.now()+duration;},onEnd:()=>{speakingUntil=0}});
 function say(text,opts={}){return voiceSystem.speak(text,opts)}
-const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});
+const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 document.getElementById('name').textContent=real?'Rusty':'Bricko';activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
@@ -187,7 +187,9 @@ animateRig(player,clock,active);animateRig(buddy,clock+1.1,false);
 if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*.063:Math.sin(clock*1.6)*.014;player.model3d.rotation.z=active?Math.sin(clock*9)*.025:Math.sin(clock*.6)*.012;}
 if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
 activities.tick(now,dt);
-const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
-camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*3.65,1.15+pitch*2.3,Math.cos(yaw)*3.65)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
+const playMode=activities.getMode(),inGame=playMode==='jenga'||playMode==='stack'||playMode==='memory';
+const target=inGame?new T.Vector3(1.4,playMode==='memory'?.40:1.15,.5):player.root.position.clone().add(new T.Vector3(0,1.05,0));
+const offset=inGame?new T.Vector3(Math.sin(yaw)*3.8,2.1+pitch*2.3,Math.cos(yaw)*3.8):new T.Vector3(Math.sin(yaw)*3.65,1.15+pitch*2.3,Math.cos(yaw)*3.65);
+camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
