@@ -25,6 +25,7 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
 #load{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;background:#2a2521f5;text-align:center;padding:24px;color:#f0dec7;font-size:18px;pointer-events:none}
 @media(pointer:coarse){#stick{display:block}#help{display:none}}
 @media(max-width:690px){#title strong{font-size:19px}#title small{font-size:12px}#selector{top:83px;flex-direction:column;gap:5px}#selector button{font-size:12px;padding:8px}#status{display:none}#speech{top:15%;left:58%;max-width:49vw;font-size:12px;padding:8px}#player{bottom:15px;left:8px;font-size:12px;padding:6px}#bottom{bottom:13px;left:auto;right:8px;transform:none;max-width:70%;gap:5px}#bottom button{font-size:12px;min-width:unset;padding:8px 9px}#chat{bottom:83px} }
+#supportLaunch{position:absolute;left:18px;top:153px;pointer-events:auto;display:inline-block;padding:9px 13px;background:#e7d4b7;color:#35271e;text-decoration:none;border:1px solid #977b63;border-radius:9px;font:700 13px system-ui;box-shadow:0 2px 8px #2118}@media(max-width:690px){#supportLaunch{left:12px;top:172px;padding:7px 10px;font-size:12px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body>
@@ -32,13 +33,14 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
 <div id="overlay">
  <header id="title"><strong>Emotional Support<br>Brick Game</strong><small>Together We're Stronger!</small></header>
  <div id="selector"><button id="cartoon">Cartoon Brick</button><button id="realistic">Realistic Brick</button></div>
+ <a id="supportLaunch" href="./support.html" aria-label="Open dedicated emotional support page">Emotional Support</a>
  <div id="status">LIVE 3D · WORK-IN-PROGRESS ART PASS</div>
  <div id="speech">Welcome home. Fancy a chat?</div>
  <div id="player">Playing as <strong id="name">Bricko</strong></div>
  <div id="help">WASD / Arrows: move · Drag: look · E: interact</div>
  <div id="stick"><div id="nub"></div></div>
  <div id="chat" hidden><input id="chatInput" type="text" maxlength="200" placeholder="Talk to your brick..." aria-label="Talk to your brick"><button id="send">Send</button></div>
- <nav id="bottom"><button id="chatButton">Talk</button><button id="mic">Microphone</button><button id="interact">Interact</button></nav>
+ <nav id="bottom"><button id="chatButton">Talk</button><button id="jokeButton">Joke</button><button id="mic">Microphone</button><button id="interact">Interact</button></nav>
  <div id="load">Loading your 3D lounge…</div>
 </div>
 <script type="module">
