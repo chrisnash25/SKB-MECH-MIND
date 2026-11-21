@@ -10,7 +10,7 @@ a{color:#50362a}button{border:1px solid #a58a6b;background:#e7d2b5;border-radius
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script></head><body><main><article>
 <header><div><small>EMOTIONAL SUPPORT BRICK</small><h1>A moment with your brick</h1></div><a href="./">Back to game</a></header>
 <p>This is a supportive conversation and wellbeing space—not professional therapy or crisis care. You can talk, check in on your mood and try simple calming activities.</p>
-<div id="who"><canvas id="supportAvatar" width="170" height="170" aria-label="Your selected 3D brick" style="width:170px;height:170px;max-width:40%;flex-shrink:0;touch-action:manipulation"></canvas><span id="portrait" aria-hidden="true" hidden>▣</span><span>Talking with <strong id="name">Bricko</strong><small style="display:block">Here to listen, one step at a time</small></span><button id="switch" style="margin-left:auto">Switch brick</button></div>
+<div id="who"><canvas id="supportAvatar" width="170" height="170" aria-label="Your selected 3D brick" style="width:170px;height:170px;max-width:40%;flex-shrink:0;touch-action:manipulation"></canvas><span id="portrait" aria-hidden="true" hidden>▣</span><span>Talking with <strong id="name">Bricko</strong><small style="display:block">Tap the brick to hear its recorded voice</small></span><button id="switch" style="margin-left:auto">Switch brick</button></div>
 <div id="chat" role="log" aria-live="polite" aria-label="Your support conversation"></div>
 <div id="urgent" hidden role="alert"></div>
 <div id="quick" aria-label="Conversation suggestions"></div>
@@ -54,7 +54,7 @@ jokes:["I went to the gym. They said I should work on my core. I've got a solid 
 function pick(a){const rest=a.filter(x=>!used.includes(x));const v=(rest.length?rest:a)[counter++%(rest.length||a.length)];used.push(v);if(used.length>6)used.shift();return v}
 function speaker(){return rusty?'Rusty':'Bricko'}
 function line(who,text){const el=document.createElement('div');el.className='msg '+(who==='You'?'you':'brick');el.textContent=(who==='You'?'':speaker()+': ')+text;chat.append(el);chat.scrollTop=chat.scrollHeight}
-function say(text){window.__supportAvatarSpeak?.(Math.max(1200,text.length*70));if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-GB';u.pitch=rusty?.85:1.08;u.rate=rusty?.9:1.02;speechSynthesis.speak(u)}
+function say(text){if(typeof window.__supportSpeakText==='function'){window.__supportSpeakText(text);return}window.__supportAvatarSpeak?.(Math.max(1200,text.length*70));if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-GB';u.pitch=rusty?.85:1.08;u.rate=rusty?.9:1.02;speechSynthesis.speak(u)}
 function answer(text,speak=true){line('Brick',text);if(speak)say(text)}
 function options(entries){quick.replaceChildren();for(const [label,action] of entries){const b=document.createElement('button');b.textContent=label;b.type='button';b.onclick=action;quick.append(b)}}
 function initial(){options([['Feeling low',()=>mood('sad')],['Anxious',()=>mood('worry')],['Lonely',()=>mood('lonely')],['Angry',()=>mood('anger')],['Feeling good',()=>mood('happy')],['Tell me a joke',joke],['Just chat',()=>{answer("Of course. I'm listening. What's happening?");field.focus()}]])}
