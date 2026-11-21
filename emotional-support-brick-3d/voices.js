@@ -1,4 +1,19 @@
 import { dialogue } from './dialogue.js';
+// Voice casting is based on each fictional character's personality and presentation,
+// never inferred from colour. Actual installed speech voices vary by device/browser.
+export const VOICE_CAST={
+ bricko:{name:'Bricko',presentation:'bright youthful masculine',rate:1.07,pitch:1.12,preferred:/ryan|george|daniel|male|oliver/i,hello:"Hey! Bricko here! What's the plan today?"},
+ rusty:{name:'Rusty',presentation:'dry mature masculine',rate:.91,pitch:.79,preferred:/ryan|thomas|george|daniel|male/i,hello:"Alright mate. Rusty here. What's on your mind?"},
+ pulse:{name:'Pulse',presentation:'upbeat and rhythmic',rate:1.14,pitch:1.04,preferred:/ryan|george|male|jenny/i,hello:"Yo! Pulse in the house! Ready to turn this day around?"},
+ calm:{name:'Calm',presentation:'gentle feminine',rate:.84,pitch:1.12,preferred:/sonia|libby|maisie|female|susan/i,hello:"Hello. I'm Calm. We can take things at your pace."},
+ spark:{name:'Spark',presentation:'bubbly feminine',rate:1.17,pitch:1.33,preferred:/maisie|libby|sonia|jenny|female/i,hello:"Hiya! Spark here! Oh, I'm so happy to see you!"},
+ blocky:{name:'Blocky',presentation:'measured scholarly masculine',rate:.95,pitch:.9,preferred:/thomas|daniel|george|male/i,hello:"Ah, hello! Blocky here. What shall we discover today?"},
+ cozy:{name:'Cozy',presentation:'warm reassuring feminine',rate:.88,pitch:1.04,preferred:/sonia|libby|susan|female/i,hello:"Hi, lovely. I'm Cozy. Fancy a gentle chat?"},
+ zapp:{name:'Zapp',presentation:'energetic sporty masculine',rate:1.2,pitch:1.16,preferred:/ryan|george|male/i,hello:"Hey! Zapp here! Let's make today a good one!"},
+ echo:{name:'Echo',presentation:'soft dreamy feminine',rate:.9,pitch:1.2,preferred:/libby|sonia|maisie|female/i,hello:"Hello there. I'm Echo. What have you been thinking about?"},
+ gizmo:{name:'Gizmo',presentation:'friendly practical masculine',rate:1.03,pitch:.93,preferred:/george|ryan|daniel|male/i,hello:"Alright! Gizmo here. What can we build together?"}
+};
+
 // Recorded natural character greetings, with an accessible fallback for unscripted dialogue.
 const recorded={
   cartoon:{hello:'./audio/bricko-greeting.wav'},
@@ -33,15 +48,14 @@ export function createVoices({getPlayer,onStart,onEnd}){
   function cancel(){token++;if(audio){audio.pause();audio.currentTime=0;audio=null}if('speechSynthesis' in window)speechSynthesis.cancel();end()}
   function synth(text,who,myToken){
     if(!('speechSynthesis' in window)){onEnd?.();return}
-    const v=new SpeechSynthesisUtterance(text);v.lang='en-GB';v.rate=who==='cartoon'?1.02:.9;v.pitch=who==='cartoon'?1.09:.88;
+    const v=new SpeechSynthesisUtterance(text);v.lang='en-GB';v.rate=profile.rate;v.pitch=profile.pitch;
     const preferred=preferredVoices.filter(voice=>/en[-_]GB/i.test(voice.lang));
     const pool=preferred.length?preferred:preferredVoices;
     const rank=voice=>{
       const name=voice.name.toLowerCase();
       let n=/(natural|neural|online|premium|enhanced)/.test(name)?100:0;
       n+=/british|united kingdom|en-gb|uk english/.test(name)?15:0;
-      if(who==='cartoon')n+=/maisie|libby|sonia|female|jenny|zara/.test(name)?30:0;
-      else n+=/ryan|thomas|george|male|daniel/.test(name)?30:0;
+      n+=profile.preferred.test(name)?55:0;
       return n;
     };
     if(pool.length){const sorted=[...pool].sort((a,b)=>rank(b)-rank(a));v.voice=sorted[0];}
@@ -60,14 +74,16 @@ export function createVoices({getPlayer,onStart,onEnd}){
     return text;
   }
   function speak(input,opts={}){
-    const who=getPlayer().real?'realistic':'cartoon';
-    const key=opts.key|| (lines[who][input]||dialogue[who]?.[input]?''+input:null);
-    const hasRecording=!!recorded[who]?.[key]&&opts.recorded!==false;
-    const text=(hasRecording?lines[who][key]:null)|| (key?varied(who,key):null)||lines[who][key]||input;
+    const who=getPlayer().id|| (getPlayer().real?'rusty':'bricko');
+    const profile=VOICE_CAST[who]||VOICE_CAST.bricko;
+    const legacy=who==='rusty'?'realistic':'cartoon';
+    const key=opts.key|| (lines[legacy]?.[input]||dialogue[legacy]?.[input]?''+input:null);
+    const hasRecording=!!recorded[legacy]?.[key]&&['bricko','rusty'].includes(who)&&opts.recorded!==false;
+    const text=(key==='hello'?profile.hello:null)||(hasRecording?lines[legacy][key]:null)|| (key?varied(legacy,key):null)||lines[legacy]?.[key]||input;
     cancel();const myToken=token;
     onStart?.(text,Math.max(1300,text.length*75));spokenAt=performance.now();
-    const url=recorded[who][key];
-    if(url&&opts.recorded!==false){
+    const url=hasRecording?recorded[legacy]?.[key]:null;
+    if(url&&opts.recorded!==false&&key!=='hello'){
       const a=new Audio(url);audio=a;a.preload='auto';a.volume=.94;
       a.onended=()=>{if(token===myToken){audio=null;end()}};
       a.onerror=()=>{if(token===myToken){audio=null;synth(text,who,myToken)}};
@@ -75,5 +91,5 @@ export function createVoices({getPlayer,onStart,onEnd}){
     }else synth(text,who,myToken);
     return text;
   }
-  return {speak,cancel,lines,dialogue,getCurrentVoice:()=>getPlayer().real?'Rusty':'Bricko',hasRecorded:key=>!!recorded[getPlayer().real?'realistic':'cartoon'][key],elapsed:()=>performance.now()-spokenAt};
+  return {speak,cancel,lines,dialogue,getCurrentVoice:()=>VOICE_CAST[getPlayer().id]?.name||'Bricko',hasRecorded:key=>!!recorded[getPlayer().real?'realistic':'cartoon'][key],elapsed:()=>performance.now()-spokenAt};
 }
