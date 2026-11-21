@@ -1,0 +1,44 @@
+name: Emotional Support Brick page tests
+on:
+  push:
+    paths:
+      - 'emotional-support-brick-3d/support.html'
+      - 'emotional-support-brick-3d/support-avatar.js'
+      - 'emotional-support-brick-3d/dialogue.js'
+      - 'emotional-support-brick-3d/voices.js'
+      - 'emotional-support-brick-3d/tests/**'
+      - '.github/workflows/brick-support-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  support:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install lightweight DOM test runtime
+        run: npm install --no-save jsdom@26
+      - name: Verify support conversations and safety
+        run: node emotional-support-brick-3d/tests/support.test.cjs
+      - name: Verify JavaScript module syntax
+        run: |
+          node --check emotional-support-brick-3d/dialogue.js
+          node --check emotional-support-brick-3d/voices.js
+          node --check emotional-support-brick-3d/support-avatar.js
+      - name: Record test status
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        run: |
+          mkdir -p .build-reports
+          printf '{"result":"%s","run_id":"%s","source_commit":"%s"}\n' "$STATUS" "$GITHUB_RUN_ID" "$GITHUB_SHA" > .build-reports/brick-support.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .build-reports/brick-support.json
+          git commit -m 'Record emotional support page test status' || true
+          git pull --rebase origin main || true
+          git push origin main || true
