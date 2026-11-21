@@ -109,7 +109,7 @@ if(templates[buddy.real?'realistic':'cartoon'])dressWithModel(buddy,templates[bu
 }
 const loader=new GLTFLoader();
 for(const [key,file] of [['cartoon','bricko.glb'],['realistic','rusty.glb']]){
-loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;refreshGeneratedModels();},undefined,e=>console.warn('Asset not ready; using fallback character',file,e));
+loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[key]={loaded:true,meshes:0};asset.scene.traverse(n=>{if(n.isMesh)window.__brickModelStatus[key].meshes++});refreshGeneratedModels();},undefined,e=>{window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[key]={loaded:false,error:String(e)};console.warn('Asset not ready; using fallback character',file,e)});
 }
 
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
