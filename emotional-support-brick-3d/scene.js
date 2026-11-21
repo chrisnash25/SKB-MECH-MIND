@@ -1,5 +1,5 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
-import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js';
+import {mat,block,ellipsoid,createCharacter,animateCharacter,BRICK_CAST} from './models.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
 import { woodTexture,masonryTexture,linenTexture } from './surface-textures.js';
 import { createVoices } from './voices.js';
@@ -115,8 +115,8 @@ for(const x of [4.54,4.74]){const ear=new T.Mesh(new T.ConeGeometry(.095,.20,3),
 for(let i=0;i<4;i++){const stripe=ellipsoid(scene,4.81+i*.16,1.51,-5.03,.045,.012,.19,catStripes);stripe.rotation.z=.15}
 ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
 
-let player=createCharacter(false);player.root.position.set(-.6,0,1.1);scene.add(player.root);
-let buddy=createCharacter(true);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+let player=createCharacter('bricko');player.root.position.set(-.6,0,1.1);scene.add(player.root);
+let buddy=createCharacter('rusty');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 // Production asset art pass: independently generated textured three-dimensional GLBs.
 const templates={cartoon:null,realistic:null};
 function dressWithModel(character,template){
@@ -148,12 +148,13 @@ character.faceEyes=faceEyes;character.faceMouth=lip;
 character.rig={};for(const part of ['body','leftArm','rightArm','leftLeg','rightLeg'])character.rig[part]=model.getObjectByName(part);
 character.waveUntil=0;
 }
-function refreshGeneratedModels(){
+function refreshGeneratedModels(){return; // Legacy GLBs retired; all new cast members use articulated procedural meshes.
+
 if(templates[player.real?'realistic':'cartoon'])dressWithModel(player,templates[player.real?'realistic':'cartoon']);
 if(templates[buddy.real?'realistic':'cartoon'])dressWithModel(buddy,templates[buddy.real?'realistic':'cartoon']);
 }
 const loader=new GLTFLoader();
-for(const [key,file] of [['cartoon','bricko.glb'],['realistic','rusty.glb']]){
+for(const [key,file] of []){
 loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[key]={loaded:true,meshes:0};asset.scene.traverse(n=>{if(n.isMesh)window.__brickModelStatus[key].meshes++});refreshGeneratedModels();},undefined,e=>{window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[key]={loaded:false,error:String(e)};console.warn('Asset not ready; using fallback character',file,e)});
 }
 
@@ -164,9 +165,16 @@ const voiceSystem=createVoices({getPlayer:()=>player,onStart:(text,duration)=>{b
 const conversation=createConversation();
 function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
-function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
-scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
-document.getElementById('name').textContent=real?'Rusty':'Bricko';document.getElementById('cartoon').setAttribute('aria-pressed',String(!real));document.getElementById('realistic').setAttribute('aria-pressed',String(real));try{sessionStorage.setItem('esb-character',real?'rusty':'bricko')}catch{}activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
+function select(id){
+ const cast=BRICK_CAST.find(c=>c.id===id)||BRICK_CAST[0];
+ scene.remove(player.root);player=createCharacter(cast.id);player.root.position.set(-.6,0,1.1);scene.add(player.root);
+ scene.remove(buddy.root);buddy=createCharacter(cast.id==='bricko'?'rusty':'bricko');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+ document.getElementById('name').textContent=cast.name;
+ for(const button of document.querySelectorAll('[data-brick-id]'))button.setAttribute('aria-pressed',String(button.dataset.brickId===cast.id));
+ try{sessionStorage.setItem('esb-character',cast.id)}catch{}
+ activities.stop();say(cast.id==='rusty'?'Alright mate, Rusty here.':"Hello! I'm "+cast.name+". "+cast.trait+". Fancy a chat?");
+}
+
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();
 if(/feed|biscuit|hungry|eat/.test(q)){activities.feed();return}
@@ -180,9 +188,12 @@ if(/what can we talk about|what should we talk about|have a chat/.test(q)){say('
 if(/nice work|well done|good job|i won/.test(q)){say('cheer',{key:'cheer'});return}
 if(/i lost|i failed|that was bad/.test(q)){say('oops',{key:'oops'});return}
 const answer=conversation.reply(text,player.real);say(answer)}
-document.getElementById('cartoon').setAttribute('aria-pressed','true');document.getElementById('realistic').setAttribute('aria-pressed','false');
-document.getElementById('cartoon').onclick=()=>select(false);
-document.getElementById('realistic').onclick=()=>select(true);
+const castPicker=document.getElementById('selector');
+castPicker.replaceChildren();
+for(const cast of BRICK_CAST){
+ const btn=document.createElement('button');btn.textContent=cast.name;btn.title=cast.trait;btn.dataset.brickId=cast.id;btn.setAttribute('aria-pressed',String(cast.id==='bricko'));btn.onclick=()=>select(cast.id);castPicker.append(btn);
+}
+try{const saved=sessionStorage.getItem('esb-character');if(saved&&saved!=='bricko')select(saved)}catch{}
 document.getElementById('interact').onclick=interact;
 document.getElementById('chatButton').onclick=()=>{const c=document.getElementById('chat');c.hidden=!c.hidden};
 document.getElementById('jokeButton').onclick=()=>say('joke',{key:'joke'});
