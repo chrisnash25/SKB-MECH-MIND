@@ -111,6 +111,8 @@ model.position.set(-center.x,-bounds.min.y,-center.z);
 const pivot=new T.Group();pivot.add(model);
 const scl=1.93/Math.max(size.x,.01);pivot.scale.setScalar(scl);
 character.root.add(pivot);character.model3d=pivot;character.body.visible=false;
+character.rig={};for(const part of ['body','leftArm','rightArm','leftLeg','rightLeg'])character.rig[part]=model.getObjectByName(part);
+character.waveUntil=0;
 }
 function refreshGeneratedModels(){
 if(templates[player.real?'realistic':'cartoon'])dressWithModel(player,templates[player.real?'realistic':'cartoon']);
@@ -127,7 +129,7 @@ function say(text){bubble.textContent=text;if('speechSynthesis'in window){speech
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!';refreshGeneratedModels()}
-function interact(){say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
+function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();say(q.includes('joke')?'What does a brick eat? Nothing. We have no mouths really.':q.includes('sad')?'I am here with you. Want to talk about it?':'I heard you say '+text+'. I am still learning how to chat.')}
 document.getElementById('cartoon').onclick=()=>select(false);
 document.getElementById('realistic').onclick=()=>select(true);
@@ -146,6 +148,21 @@ stick.addEventListener('pointerdown',e=>{pointer=e.pointerId;stick.setPointerCap
 stick.addEventListener('pointermove',e=>{if(pointer===e.pointerId)moveStick(e)});
 function moveStick(e){const r=stick.getBoundingClientRect();joy.set(T.MathUtils.clamp((e.clientX-r.left-r.width/2)/44,-1,1),T.MathUtils.clamp((e.clientY-r.top-r.height/2)/44,-1,1));nub.style.transform='translate('+joy.x*32+'px,'+joy.y*32+'px)'}
 stick.addEventListener('pointerup',()=>{pointer=null;joy.set(0,0);nub.style.transform=''});
+function animateRig(c,time,isMoving){
+if(!c.rig||!c.rig.leftArm||!c.rig.rightArm||!c.rig.leftLeg||!c.rig.rightLeg)return;
+const step=time*9.5;
+const leftSwing=isMoving?Math.sin(step)*.55:Math.sin(time*1.1)*.045;
+const rightSwing=isMoving?-Math.sin(step)*.55:Math.sin(time*1.2+1.8)*.055;
+const wave=c===player&&performance.now()<c.waveUntil;
+c.rig.leftArm.rotation.x=leftSwing;
+c.rig.rightArm.rotation.x=rightSwing;
+c.rig.leftArm.rotation.z=Math.sin(time*.9)*.028;
+c.rig.rightArm.rotation.z=wave?-.85+Math.sin(time*13)*.22:Math.sin(time*.85+2)*.035;
+c.rig.leftLeg.rotation.x=isMoving?Math.sin(step+Math.PI)*.43:0;
+c.rig.rightLeg.rotation.x=isMoving?Math.sin(step)*.43:0;
+if(c.rig.body)c.rig.body.rotation.z=Math.sin(time*.75)*.012;
+}
+
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.06,(now-last)/1000);last=now;clock+=dt;
 let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x,z=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y;
 const movement=new T.Vector3(x,0,z),active=movement.length()>.12;
@@ -154,6 +171,7 @@ player.root.position.x=T.MathUtils.clamp(player.root.position.x,-6,6);player.roo
 player.root.rotation.y=T.MathUtils.lerp(player.root.rotation.y,Math.atan2(movement.x,movement.z),.14)}
 animateCharacter(player,clock,dt,active,now<speakingUntil);
 animateCharacter(buddy,clock+1.1,dt,false,false);
+animateRig(player,clock,active);animateRig(buddy,clock+1.1,false);
 if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*.063:Math.sin(clock*1.6)*.014;player.model3d.rotation.z=active?Math.sin(clock*9)*.025:Math.sin(clock*.6)*.012;}
 if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
 const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
