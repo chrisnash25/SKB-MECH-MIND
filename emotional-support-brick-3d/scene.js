@@ -148,14 +148,31 @@ character.faceEyes=faceEyes;character.faceMouth=lip;
 character.rig={};for(const part of ['body','leftArm','rightArm','leftLeg','rightLeg'])character.rig[part]=model.getObjectByName(part);
 character.waveUntil=0;
 }
-function refreshGeneratedModels(){return; // Legacy GLBs retired; all new cast members use articulated procedural meshes.
-
-if(templates[player.real?'realistic':'cartoon'])dressWithModel(player,templates[player.real?'realistic':'cartoon']);
-if(templates[buddy.real?'realistic':'cartoon'])dressWithModel(buddy,templates[buddy.real?'realistic':'cartoon']);
-}
+// Keep procedural characters available until the individually authored GLBs load.
+const castAssets=new Map();
 const loader=new GLTFLoader();
-for(const [key,file] of []){
-loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[key]={loaded:true,meshes:0};asset.scene.traverse(n=>{if(n.isMesh)window.__brickModelStatus[key].meshes++});refreshGeneratedModels();},undefined,e=>{window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[key]={loaded:false,error:String(e)};console.warn('Asset not ready; using fallback character',file,e)});
+function applyCastModel(character){
+ const asset=castAssets.get(character.id);if(!asset)return;
+ if(character.model3d)character.root.remove(character.model3d);
+ const model=asset.clone(true);
+ model.rotation.y=Math.PI; // Blender models face -Y; glTF conversion maps that to -Z.
+ const bounds=new T.Box3().setFromObject(model);
+ const size=bounds.getSize(new T.Vector3());
+ const pivot=new T.Group();pivot.scale.setScalar(1.95/Math.max(size.y,.01));
+ model.position.y=-bounds.min.y;
+ pivot.add(model);character.root.add(pivot);character.model3d=pivot;character.body.visible=false;
+ model.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+ character.rig={leftArm:model.getObjectByName('leftArm'),rightArm:model.getObjectByName('rightArm'),leftLeg:model.getObjectByName('leftLeg'),rightLeg:model.getObjectByName('rightLeg'),body:model.getObjectByName('body')};
+ // Facial overlay is attached only if the authored model lacks face animation.
+}
+for(const cast of BRICK_CAST){
+ loader.load('./assets/cast/'+cast.id+'.glb',gltf=>{
+  castAssets.set(cast.id,gltf.scene);
+  window.__brickModelStatus=window.__brickModelStatus||{};
+  window.__brickModelStatus[cast.id]={loaded:true,meshes:gltf.scene.getObjectByProperty('isMesh',true)?1:0};
+  if(player.id===cast.id)applyCastModel(player);
+  if(buddy.id===cast.id)applyCastModel(buddy);
+ },undefined,()=>{window.__brickModelStatus=window.__brickModelStatus||{};window.__brickModelStatus[cast.id]={loaded:false};});
 }
 
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
@@ -172,7 +189,7 @@ function select(id){
  document.getElementById('name').textContent=cast.name;
  for(const button of document.querySelectorAll('[data-brick-id]'))button.setAttribute('aria-pressed',String(button.dataset.brickId===cast.id));
  try{sessionStorage.setItem('esb-character',cast.id)}catch{}
- activities.stop();say(cast.id==='rusty'?'Alright mate, Rusty here.':"Hello! I'm "+cast.name+". "+cast.trait+". Fancy a chat?");
+ activities.stop();applyCastModel(player);applyCastModel(buddy);say(cast.id==='rusty'?'Alright mate, Rusty here.':"Hello! I'm "+cast.name+". "+cast.trait+". Fancy a chat?");
 }
 
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
