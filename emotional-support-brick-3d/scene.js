@@ -51,6 +51,35 @@ for(let i=0;i<3200;i++){o.position.set(-2.8+rnd()*5.3,.105,-2.55+rnd()*3.9);o.ro
 block(scene,2,.12,1.0,wood,-3.6,.7,-2,.04);
 for(const x of [-4.43,-2.77])for(const z of [-2.37,-1.63])block(scene,.1,.65,.1,beam,x,.33,z);
 const bag=ellipsoid(scene,2,.35,-1.48,1.13,.42,.97,mat('#605b61'));
+// Living-room dressing: dimensional plants, throws, ceramics, and a sleeping cat.
+const leafDark=mat('#3f6345'),leafMid=mat('#5f8155'),leafLight=mat('#789063');
+let plantSeed=2781;const randomLeaf=()=>((plantSeed=(Math.imul(plantSeed,1664525)+1013904223)>>>0)/4294967296);
+function plant(x,y,z,scale=1){
+block(scene,.42*scale,.38*scale,.42*scale,mat('#a77d61'),x,y,z,.065);
+for(let k=0;k<19;k++){
+const angle=k*2.4,extent=(.25+randomLeaf()*.42)*scale,high=(.48+randomLeaf()*.82)*scale;
+const start=new T.Vector3(x,y+.16*scale,z);
+const end=new T.Vector3(x+Math.cos(angle)*extent,y+high,z+Math.sin(angle)*extent);
+const stem=new T.Mesh(new T.CylinderGeometry(.007*scale,.013*scale,start.distanceTo(end),7),mat('#496044'));
+stem.position.copy(start).add(end).multiplyScalar(.5);stem.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),end.clone().sub(start).normalize());scene.add(stem);
+const f=ellipsoid(scene,end.x,end.y,end.z,.18*scale,.044*scale,.1*scale,[leafDark,leafMid,leafLight][k%3]);f.rotation.y=angle;f.rotation.z=(randomLeaf()-.5)*.7;
+}}
+plant(-3.7,.45,-5.5,1.2);plant(6.55,.35,-3.85,1.3);plant(-4.35,3.32,-6.45,.58);
+block(scene,.7,.62,.16,mat('#a17660'),4.75,1.39,-5.2,.12).rotation.z=-.13;
+block(scene,.7,.59,.16,mat('#a2a49b'),2.6,1.38,-5.2,.12).rotation.z=.11;
+const mug=mat('#e9d8c4');const cup=new T.Mesh(new T.CylinderGeometry(.13,.12,.25,28),mug);cup.position.set(-3.95,.9,-1.81);cup.castShadow=true;scene.add(cup);
+const handle=new T.Mesh(new T.TorusGeometry(.08,.021,7,20,Math.PI*1.7),mug);handle.rotation.y=Math.PI/2;handle.position.set(-3.8,.9,-1.81);scene.add(handle);
+const tableCookie=new T.Mesh(new T.CylinderGeometry(.18,.18,.035,24),mat('#b58d62'));tableCookie.position.set(-3.28,.78,-1.76);scene.add(tableCookie);
+const lampShade=new T.Mesh(new T.CylinderGeometry(.30,.42,.58,24,1,true),mat('#e0c4a1',.92,{side:T.DoubleSide}));lampShade.position.set(-3.8,2.85,-5.45);scene.add(lampShade);
+block(scene,.05,1.2,.05,beam,-3.8,2.21,-5.45);
+block(scene,.39,.06,.39,beam,-3.8,1.58,-5.45);
+const catFur=mat('#77634f'),catStripes=mat('#514a40'),catPink=mat('#bc8d7a');
+ellipsoid(scene,5.0,1.34,-5.0,.55,.19,.37,catFur);
+ellipsoid(scene,4.64,1.4,-4.9,.19,.17,.18,catFur);
+for(const x of [4.54,4.74]){const ear=new T.Mesh(new T.ConeGeometry(.095,.20,3),catFur);ear.position.set(x,1.61,-4.9);ear.rotation.y=.3;scene.add(ear)}
+for(let i=0;i<4;i++){const stripe=ellipsoid(scene,4.81+i*.16,1.51,-5.03,.045,.012,.19,catStripes);stripe.rotation.z=.15}
+ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
+
 let player=createCharacter(false);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 const buddy=createCharacter(true);buddy.root.position.set(2,0,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
