@@ -2,6 +2,8 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.modul
 import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
 import { woodTexture,masonryTexture,linenTexture } from './surface-textures.js';
+import { createVoices } from './voices.js';
+import { createActivities } from './activities.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
 const camera=new T.PerspectiveCamera(50,innerWidth/innerHeight,.1,80);
 const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true,preserveDrawingBuffer:new URLSearchParams(location.search).has('capture')});
@@ -126,12 +128,21 @@ loader.load('./assets/'+file,asset=>{templates[key]=asset.scene;window.__brickMo
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
 camera.position.set(-.6,2.40,4.75);camera.lookAt(-.6,1.05,1.1);
 const keys={},joy=new T.Vector2(),world=document.getElementById('world'),bubble=document.getElementById('speech');
-function say(text){bubble.textContent=text;if('speechSynthesis'in window){speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(text);utter.lang='en-GB';utter.pitch=player.real?.8:1.15;utter.rate=player.real?.85:1.05;speakingUntil=performance.now()+text.length*65;speechSynthesis.speak(utter)}}
+const voiceSystem=createVoices({getPlayer:()=>player,onStart:(text,duration)=>{bubble.textContent=text;speakingUntil=performance.now()+duration;},onEnd:()=>{speakingUntil=0}});
+function say(text,opts={}){return voiceSystem.speak(text,opts)}
+const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});
 function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
 scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
-document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!';refreshGeneratedModels()}
+document.getElementById('name').textContent=real?'Rusty':'Bricko';activities.stop();refreshGeneratedModels();say('hello',{key:'hello'})}
 function interact(){player.waveUntil=performance.now()+1250;say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
-function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();say(q.includes('joke')?'What does a brick eat? Nothing. We have no mouths really.':q.includes('sad')?'I am here with you. Want to talk about it?':'I heard you say '+text+'. I am still learning how to chat.')}
+function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();
+if(/feed|biscuit|hungry|eat/.test(q)){activities.feed();return}
+if(/nap|sleep|tired/.test(q)){activities.sleep();return}
+if(/dance|music|song/.test(q)){activities.dance();return}
+if(/jenga/.test(q)){activities.jenga();return}
+if(/stack|tower|building/.test(q)){activities.stack();return}
+if(/memory|pairs/.test(q)){activities.memory();return}
+const answer=/joke|funny/.test(q)?"I went to a party last night. I was the cornerstone of the conversation.":/sad|lonely|upset/.test(q)?"I'm sorry. Want to tell me about it, or shall we play something together?":/name|who are you/.test(q)?(player.real?"I'm Rusty, a well-weathered brick with a surprisingly big heart.":"I'm Bricko, the friendliest brick in the building!"):/hello|hey|hi/.test(q)?"Hello again! Shall we have some fun?":/how are you/.test(q)?"Quite solid, thanks for asking. That's brick humour for you.":"I heard you say "+text+". We could try a game, a dance or a biscuit.";say(answer)}
 document.getElementById('cartoon').onclick=()=>select(false);
 document.getElementById('realistic').onclick=()=>select(true);
 document.getElementById('interact').onclick=interact;
@@ -175,6 +186,7 @@ animateCharacter(buddy,clock+1.1,dt,false,false);
 animateRig(player,clock,active);animateRig(buddy,clock+1.1,false);
 if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*9))*.063:Math.sin(clock*1.6)*.014;player.model3d.rotation.z=active?Math.sin(clock*9)*.025:Math.sin(clock*.6)*.012;}
 if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.012;buddy.model3d.rotation.z=Math.sin(clock*.7)*.012;}
+activities.tick(now,dt);
 const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
 camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*3.65,1.15+pitch*2.3,Math.cos(yaw)*3.65)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
