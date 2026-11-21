@@ -92,6 +92,8 @@ c.body.rotation.z=walking?Math.sin(s)*.009:Math.sin(t*.72)*.004;
 for(let i=0;i<2;i++){
 c.legs[i].rotation.x=T.MathUtils.damp(c.legs[i].rotation.x,c.seated?-1.08:(walking?Math.sin(s+i*Math.PI)*.31:0),11,dt);
 c.arms[i].rotation.x=T.MathUtils.damp(c.arms[i].rotation.x,c.seated?-.30:(walking?Math.sin(s+i*Math.PI+Math.PI)*.15:Math.sin(t*1.2+i)*.025),11,dt);
+ const waving=i===1&&performance.now()<(c.waveUntil||0);
+ c.arms[i].rotation.z=T.MathUtils.damp(c.arms[i].rotation.z,waving?-1.4+Math.sin(t*13)*.12:0,10,dt);
 }
 const blink=(t%4.6>3.92&&t%4.6<4.05)?.10:1;
 for(const eye of c.eyes)eye.scale.y=T.MathUtils.damp(eye.scale.y,blink,18,dt);
