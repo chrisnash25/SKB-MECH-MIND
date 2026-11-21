@@ -54,12 +54,35 @@ jobs:
           await page.evaluate(()=>document.getElementById('realistic').click());await page.waitForTimeout(1000);
           await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW',key:'w'})));await page.waitForTimeout(500);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyW',key:'w'})));
           const second=await saveCanvas('brick-rusty-960x540.png');
+          const features=await page.evaluate(()=>{
+            const game=window.__brickActivities;
+            if(!game)throw new Error('3D activity manager missing');
+            document.getElementById('feedAction').click();
+            const feed=game.getMode();
+            document.getElementById('restAction').click();
+            const sleep=game.getMode();
+            document.getElementById('restAction').click();
+            document.getElementById('danceAction').click();
+            const dance=game.getMode();
+            game.jenga();const jenga=game.getMode();
+            game.stack();const stack=game.getMode();
+            game.memory();const memory=game.getMode();
+            game.stop();
+            return {feed,sleep,dance,jenga,stack,memory,stats:game.getStats()};
+          });
+          const voiceFiles=await Promise.all(['bricko-greeting.wav','rusty-greeting.mp3'].map(async n=>{
+            const res=await page.request.get('http://127.0.0.1:8765/emotional-support-brick-3d/audio/'+n);
+            return {name:n,status:res.status(),bytes:(await res.body()).length};
+          }));
+          console.log('INTERACTIVE FEATURES:',JSON.stringify(features));
+          console.log('RECORDED VOICES:',JSON.stringify(voiceFiles));
+
           await page.setViewportSize({width:1920,height:1080});
           await page.waitForTimeout(950);
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
-          if(errors.length||!state.loaded||!state.webgl||state.frames<2||!state.models.cartoon?.loaded||!state.models.realistic?.loaded||state.models.cartoon.meshes!==5||state.models.realistic.meshes!==5||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.models.cartoon?.loaded||!state.models.realistic?.loaded||state.models.cartoon.meshes!==5||state.models.realistic.meshes!==5||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
