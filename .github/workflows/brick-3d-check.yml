@@ -51,8 +51,8 @@ jobs:
           const bytes=Buffer.from(data.split(',')[1],'base64');fs.writeFileSync(filename,bytes);console.log('Captured',filename,bytes.length,'bytes');return bytes.length;
           }
           const first=await saveCanvas('brick-room-960x540.png');
-          await page.click('#realistic');await page.waitForTimeout(1000);
-          await page.keyboard.down('w');await page.waitForTimeout(500);await page.keyboard.up('w');
+          await page.evaluate(()=>document.getElementById('realistic').click());await page.waitForTimeout(1000);
+          await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW',key:'w'})));await page.waitForTimeout(500);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyW',key:'w'})));
           const second=await saveCanvas('brick-rusty-960x540.png');
           await page.setViewportSize({width:1920,height:1080});
           await page.waitForTimeout(950);
