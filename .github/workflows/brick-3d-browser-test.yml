@@ -1,0 +1,63 @@
+name: Bricko 3D — WebGL and Face Skin Screenshot Test
+on:
+  push:
+    branches: [main]
+    paths: ['brick/index.html']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser testing tools
+        run: |
+          mkdir -p /tmp/brick-test
+          cd /tmp/brick-test
+          npm init -y >/dev/null
+          npm install playwright@1.58.2 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Verify 3D rendering and both skins
+        run: |
+          python3 -m http.server 8765 >/tmp/brick-http.log 2>&1 &
+          cat > /tmp/brick-test/check.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});
+            const page=await browser.newPage({viewport:{width:1280,height:900},deviceScaleFactor:1});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8765/brick/',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(2600);
+            const check=await page.evaluate(()=>({info:document.getElementById('renderInfo').textContent,canvas:!!document.getElementById('brick3d'),width:document.getElementById('brick3d')?.width||0,height:document.getElementById('brick3d')?.height||0,buttons:document.querySelectorAll('[data-skin]').length,level:document.getElementById('level').textContent}));
+            console.log('BRICK_3D_STATE',JSON.stringify(check));
+            if(!check.info.includes('WEBGL 2')||check.width<500||check.height<300||check.buttons!==2)throw Error('3D renderer not active');
+            await page.locator('[data-skin="puppet"]').click();
+            await page.waitForTimeout(700);
+            const puppet=await page.evaluate(()=>({label:document.getElementById('skinName').textContent,saved:JSON.parse(localStorage.getItem('bricko_save')).skin}));
+            console.log('PUPPET_SKIN',JSON.stringify(puppet));
+            if(puppet.saved!=='puppet'||!puppet.label.includes('PUPPET'))throw Error('Puppet skin did not persist');
+            await page.locator('#stage').screenshot({path:'/tmp/brick-puppet.png'});
+            await page.locator('[data-skin="human"]').click();
+            await page.waitForTimeout(700);
+            const human=await page.evaluate(()=>({label:document.getElementById('skinName').textContent,saved:JSON.parse(localStorage.getItem('bricko_save')).skin}));
+            console.log('HUMAN_SKIN',JSON.stringify(human));
+            if(human.saved!=='human'||!human.label.includes('HUMAN'))throw Error('Human skin did not persist');
+            await page.locator('#stage').screenshot({path:'/tmp/brick-human.png'});
+            console.log('BRICK_BROWSER_ERRORS',JSON.stringify(errors));
+            if(errors.length)throw Error('Browser JS errors: '+errors.join('; '));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          EOF
+          timeout 100s node /tmp/brick-test/check.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bricko-3d-two-skins-screenshots
+          path: |
+            /tmp/brick-puppet.png
+            /tmp/brick-human.png
+          if-no-files-found: ignore
