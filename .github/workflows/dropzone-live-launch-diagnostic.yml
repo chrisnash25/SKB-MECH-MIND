@@ -1,0 +1,63 @@
+name: DROPZONE — Verify Actual Playable Live Build
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/dropzone-live-launch-diagnostic.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser
+        run: |
+          mkdir -p /tmp/dropzone-check && cd /tmp/dropzone-check
+          npm init -y >/dev/null
+          npm install playwright@1.58.2 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Actually click START and load Godot resources
+        run: |
+          cat >/tmp/dropzone-check/test.cjs <<'EOF'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});
+            const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:1});
+            const errors=[],resources=[];
+            page.on('pageerror',e=>errors.push('PAGE '+e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text().slice(0,400))});
+            page.on('requestfailed',r=>{if(/index\.(pck|wasm|js)/.test(r.url()))errors.push('FAILED '+r.url()+' '+r.failure()?.errorText)});
+            page.on('response',r=>{if(/index\.(pck|wasm|js)/.test(r.url()))resources.push({status:r.status(),url:r.url(),bytes:r.headers()['content-length']})});
+            const url='https://chrisnash25.github.io/SKB-MECH-MIND/dropzone/?test=real-launch-20261121';
+            const r=await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
+            console.log('LIVE_URL',url,'HTTP',r.status());
+            if(r.status()!==200)throw Error('Live link HTTP '+r.status());
+            await page.locator('#dz-launch').waitFor({state:'visible',timeout:10000});
+            console.log('START_BUTTON_VISIBLE',true);
+            await page.locator('#dz-launch').click();
+            console.log('START_CLICKED');
+            for(let i=0;i<14;i++){
+              await page.waitForTimeout(5000);
+              const state=await page.evaluate(()=>({notice:document.querySelector('#status-notice')?.innerText?.slice(0,250)||'',status:!!document.querySelector('#status'),display:document.querySelector('#status')?.style.display||'',progress:document.querySelector('#status-progress')?.value||0,canvas:{width:document.querySelector('#canvas')?.width||0,height:document.querySelector('#canvas')?.height||0},overlayHidden:document.querySelector('#dz-music-overlay')?.classList.contains('dz-hidden'),glLost:(()=>{try{return document.querySelector('#canvas')?.getContext('webgl2')?.isContextLost()}catch(e){return String(e)}})()}));
+              console.log('STATE_'+i,JSON.stringify(state));
+              if(i===5 || i===13)await page.screenshot({path:'/tmp/dropzone-live-'+i+'.png',timeout:12000});
+              if(!state.status && state.canvas.width>100){console.log('GAME_STARTED_OK');break}
+              if(/failed|error|unsupported/i.test(state.notice))break;
+            }
+            console.log('RESOURCES',JSON.stringify(resources));
+            console.log('ERRORS',JSON.stringify(errors.slice(0,25)));
+            const final=await page.evaluate(()=>({status:!!document.querySelector('#status'),notice:document.querySelector('#status-notice')?.innerText||'',canvasWidth:document.querySelector('#canvas')?.width||0}));
+            if(final.status || final.canvasWidth<100 || errors.some(e=>/abort|failed to load|out of memory|context lost/i.test(e)))throw Error('Game did not launch successfully: '+JSON.stringify(final));
+            await browser.close();
+          })().catch(e=>{console.error('DIAGNOSTIC_FAILURE',e);process.exitCode=1});
+          EOF
+          cd /tmp/dropzone-check
+          timeout 115s node test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dropzone-real-launch-diagnostic-screenshots
+          path: /tmp/dropzone-live-*.png
+          if-no-files-found: ignore
