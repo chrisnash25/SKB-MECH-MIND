@@ -37,3 +37,16 @@ jobs:
         with:
           name: brick-voice-files
           path: emotional-support-brick-3d/audio/
+      - name: Record voice-install status
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        run: |
+          mkdir -p .build-reports
+          printf '{"result":"%s","run_id":"%s"}\n' "$STATUS" "$GITHUB_RUN_ID" > .build-reports/brick-voices.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .build-reports/brick-voices.json
+          git commit -m 'Record Brick voice install status' || true
+          git pull --rebase origin main || true
+          git push origin main || true
