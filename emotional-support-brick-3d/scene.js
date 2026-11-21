@@ -88,11 +88,13 @@ for(let i=0;i<4;i++){const stripe=ellipsoid(scene,4.81+i*.16,1.51,-5.03,.045,.01
 ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
 
 let player=createCharacter(false);player.root.position.set(-.6,0,1.1);scene.add(player.root);
-const buddy=createCharacter(true);buddy.root.position.set(2,0,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+let buddy=createCharacter(true);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 let yaw=0,pitch=.1,drag=false,px=0,py=0,last=performance.now(),clock=0,speakingUntil=0;
 const keys={},joy=new T.Vector2(),world=document.getElementById('world'),bubble=document.getElementById('speech');
 function say(text){bubble.textContent=text;if('speechSynthesis'in window){speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(text);utter.lang='en-GB';utter.pitch=player.real?.8:1.15;utter.rate=player.real?.85:1.05;speakingUntil=performance.now()+text.length*65;speechSynthesis.speak(utter)}}
-function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!'}
+function select(real){scene.remove(player.root);player=createCharacter(real);player.root.position.set(-.6,0,1.1);scene.add(player.root);
+scene.remove(buddy.root);buddy=createCharacter(!real);buddy.seated=true;buddy.root.position.set(2,.18,-1.4);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+document.getElementById('name').textContent=real?'Rusty':'Bricko';bubble.textContent='Hello! Good to see you!'}
 function interact(){say(player.real?'Careful, I am more than just a brick.':'That tickles! I think. Do bricks feel tickles?')}
 function respond(){const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;input.value='';const q=text.toLowerCase();say(q.includes('joke')?'What does a brick eat? Nothing. We have no mouths really.':q.includes('sad')?'I am here with you. Want to talk about it?':'I heard you say '+text+'. I am still learning how to chat.')}
 document.getElementById('cartoon').onclick=()=>select(false);
