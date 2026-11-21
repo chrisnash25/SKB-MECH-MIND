@@ -23,55 +23,67 @@ d[i]=Math.max(0,Math.min(255,d[i]+noise));d[i+1]=Math.max(0,Math.min(255,d[i+1]+
 for(let i=0;i<(real?5100:1700);i++){const x=random()*512,y=random()*512,r=(real?2.8:1.1)*random()+.5;ctx.fillStyle=random()>.4?'#86402f73':'#f7a77a59';ctx.beginPath();ctx.ellipse(x,y,r,r*.7,0,0,Math.PI*2);ctx.fill()}
 const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.anisotropy=4;return tex;
 }
-export function createCharacter(real=false){
-const root=new T.Group(),body=new T.Group();root.add(body);
-const surface=brickTexture(real);
-const red=mat('#ffffff',real?.99:.98,{map:surface,bumpMap:surface,bumpScale:real?.075:.026});
-const black=mat('#211e20'),glove=mat('#f6efe8',.45),sneaker=mat(real?'#9b733e':'#cc3e35',.55),sole=mat('#ece6de',.85);
-const white=mat('#fff9f5',.12),iris=mat(real?'#292426':'#347aa2',.13),pink=mat('#e88b92',.62),mouthmat=mat('#461f25',.87);
-const geo=rounded(1.82,1.13,.71,real?.065:.075);
-if(real){
-const pos=geo.getAttribute('position');
-for(let i=0;i<pos.count;i++){
-const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
-const n=.008*Math.sin(x*47+y*53+z*37)*Math.cos(x*23-y*41+z*19);
-const f=1+n;pos.setXYZ(i,x*f,y*f,z*f);
-}
-geo.computeVertexNormals();
-}
-const brick=object(body,geo,red,0,1.2,0);
-if(real){for(let i=0;i<130;i++){const px=(random()-.5)*1.5,py=.72+random()*.96;
-ellipsoid(body,px,py,.353,.007+random()*.022,.01+random()*.018,.005,mat(random()>.5?'#80432f':'#c88059'));}}
-const eyes=[],pupils=[],arms=[],legs=[];
-for(const a of [-1,1]){
-const eye=new T.Group();body.add(eye);eye.position.set(a*.44,1.35,.315);eyes.push(eye);
-ellipsoid(eye,0,0,0,.195,.21,.065,white);
-const pupil=new T.Group();eye.add(pupil);pupils.push(pupil);
-ellipsoid(pupil,a*.025,-.006,.056,.124,.144,.036,iris);
-ellipsoid(pupil,a*.024,-.01,.084,.093,.113,.028,black);
-ellipsoid(pupil,-.033,.052,.109,.042,.044,.012,white);
-tube(body,[[a*.29,1.7,.37],[a*.42,1.735,.4],[a*.57,1.69,.37]],.026,black);
-ellipsoid(body,a*.69,1.07,.344,.128,.07,.013,pink);
-const arm=new T.Group();arm.position.set(a*.84,1.25,0);body.add(arm);arms.push(arm);
-const upper=ellipsoid(arm,a*.11,-.19,.005,.095,.28,.094,black);upper.rotation.z=a*.18;
-ellipsoid(arm,a*.20,-.43,.08,.145,.115,.13,glove);
-ellipsoid(arm,a*.21,-.53,.145,.155,.14,.12,glove);
-for(let f=0;f<4;f++)ellipsoid(arm,a*.21+(f-1.5)*.056,-.61,.18,.031,.057,.043,glove);
-const thumb=ellipsoid(arm,a*.365,-.52,.19,.065,.105,.06,glove);thumb.rotation.z=-a*.55;
-const leg=new T.Group();leg.position.set(a*.41,.73,0);body.add(leg);legs.push(leg);
-ellipsoid(leg,0,-.20,0,.11,.28,.12,black);
-ellipsoid(leg,0,-.49,.18,.22,.18,.34,sneaker);
-block(leg,.48,.10,.72,sole,0,-.63,.2,.045);
-ellipsoid(leg,0,-.5,.46,.2,.08,.13,real?mat('#c4a17c'):sole);
-const trim=tube(leg,[[-.22,-.61,-.09],[-.22,-.62,.48],[0,-.62,.56],[.22,-.62,.48],[.22,-.61,-.09]],.014,real?mat('#503a2d'):mat('#eee2dd'));
-for(let k=0;k<3;k++)tube(leg,[[-.11,-.4+k*.039,.17+k*.046],[.11,-.4+k*.039,.17+k*.046]],.011,sole);
-}
-const mouth=new T.Group();body.add(mouth);mouth.position.set(0,1.06,.362);
-const shape=new T.Shape();shape.moveTo(-.16,.10);shape.bezierCurveTo(-.2,-.13,-.1,-.24,0,-.24);shape.bezierCurveTo(.1,-.24,.2,-.11,.16,.10);shape.quadraticCurveTo(0,.015,-.16,.10);
-object(mouth,new T.ShapeGeometry(shape,20),mouthmat,0,0,.03);
-ellipsoid(mouth,0,-.16,.04,.09,.04,.008,mat('#ed8589'));
-const shadow=object(root,new T.CircleGeometry(.81,32),new T.MeshBasicMaterial({color:'#22201d',transparent:true,opacity:.16,depthWrite:false}),0,.025,0);shadow.rotation.x=-Math.PI/2;
-return {root,body,eyes,pupils,arms,legs,mouth,real,step:0};
+export const BRICK_CAST=[
+ {id:'bricko',name:'Bricko',color:'#df4536',style:'cap',trait:'Friendly leader'},
+ {id:'rusty',name:'Rusty',color:'#a95a36',style:'goggles',trait:'Witty inventor'},
+ {id:'pulse',name:'Pulse',color:'#262b52',style:'neon',trait:'Music lover'},
+ {id:'calm',name:'Calm',color:'#77b7dd',style:'beanie',trait:'Chill companion'},
+ {id:'spark',name:'Spark',color:'#f4ba3f',style:'stars',trait:'Cheerful entertainer'},
+ {id:'blocky',name:'Blocky',color:'#8f9194',style:'glasses',trait:'Curious thinker'},
+ {id:'cozy',name:'Cozy',color:'#e98aa9',style:'scarf',trait:'Caring friend'},
+ {id:'zapp',name:'Zapp',color:'#81c52b',style:'band',trait:'Energetic athlete'},
+ {id:'echo',name:'Echo',color:'#8c57ca',style:'space',trait:'Thoughtful dreamer'},
+ {id:'gizmo',name:'Gizmo',color:'#e98737',style:'tools',trait:'Helpful builder'}
+];
+export function createCharacter(identity='bricko'){
+ const cfg=BRICK_CAST.find(c=>c.id===identity)||BRICK_CAST[0];
+ const root=new T.Group(),body=new T.Group();root.add(body);
+ const shell=mat(cfg.color,.48,{metalness:cfg.style==='neon'?.24:.035});
+ const dark=mat('#26212b',.65),white=mat('#fff9ef',.26),iris=mat(cfg.id==='calm'?'#4b769c':'#383344',.2),glove=mat('#f7e7d7',.5);
+ const sneaker=mat(cfg.style==='space'?'#392d61':'#373441',.55);
+ block(body,1.72,1.25,.77,shell,0,1.22,0,.17);
+ // Embossed studs keep the body unmistakably brick-shaped.
+ for(const x of [-.49,0,.49]){
+ const stud=object(body,new T.CylinderGeometry(.21,.21,.11,24),shell,x,1.89,0);
+ stud.castShadow=true;
+ }
+ const eyes=[],pupils=[],arms=[],legs=[];
+ for(const sign of [-1,1]){
+  const eye=new T.Group();eye.position.set(sign*.4,1.39,.40);body.add(eye);eyes.push(eye);
+  ellipsoid(eye,0,0,0,.195,.20,.05,white);
+  const pupil=new T.Group();eye.add(pupil);pupils.push(pupil);
+  ellipsoid(pupil,0,-.018,.048,.108,.12,.034,iris);
+  ellipsoid(pupil,-.03,.047,.075,.038,.045,.012,white);
+  const arm=new T.Group();arm.position.set(sign*.87,1.38,0);body.add(arm);arms.push(arm);
+  ellipsoid(arm,sign*.07,-.22,0,.125,.29,.13,shell);
+  ellipsoid(arm,sign*.10,-.48,.04,.17,.16,.15,glove);
+  const leg=new T.Group();leg.position.set(sign*.39,.68,0);body.add(leg);legs.push(leg);
+  ellipsoid(leg,0,-.2,0,.14,.24,.14,dark);
+  ellipsoid(leg,0,-.46,.17,.24,.17,.34,sneaker);
+  block(leg,.50,.09,.68,white,0,-.57,.18,.04);
+ }
+ const mouth=new T.Group();mouth.position.set(0,1.03,.415);body.add(mouth);
+ ellipsoid(mouth,0,0,0,.21,.075,.025,dark);
+ ellipsoid(mouth,0,-.035,.025,.115,.026,.015,mat('#df8290'));
+ const accessories=new T.Group();body.add(accessories);
+ const cloth=mat(cfg.id==='cozy'?'#f6d5c3':'#343650',.9),accent=mat(cfg.id==='pulse'?'#3fe8fc':'#f4e6d7',.45);
+ const cap=(color)=>{const m=mat(color,.8);block(accessories,1.6,.18,.8,m,0,1.97,0,.09);block(accessories,.85,.07,.53,m,0,1.94,.52,.045)};
+ if(cfg.style==='cap')cap('#b92e2c');
+ if(cfg.style==='tools'){cap('#31354c');block(accessories,.8,.16,.12,cloth,0,.78,.43,.04)}
+ if(cfg.style==='goggles'){
+  for(const x of [-.38,.38]){const g=object(accessories,new T.TorusGeometry(.24,.065,10,28),dark,x,1.94,.38);g.rotation.x=0;ellipsoid(accessories,x,1.94,.37,.16,.14,.03,mat('#70c4d7',.19,{metalness:.28}));}
+ }
+ if(cfg.style==='glasses')for(const x of [-.4,.4]){const g=object(accessories,new T.TorusGeometry(.21,.045,8,28),dark,x,1.39,.49);g.scale.y=.8}
+ if(cfg.style==='beanie'){ellipsoid(accessories,0,1.96,0,.87,.26,.48,cloth);block(accessories,1.73,.16,.85,cloth,0,1.88,0,.06)}
+ if(cfg.style==='scarf'){block(accessories,1.58,.18,.87,cloth,0,.77,0,.09);block(accessories,.21,.5,.12,cloth,.48,.51,.47,.04)}
+ if(cfg.style==='band'){block(accessories,1.72,.18,.8,dark,0,1.76,0,.045);block(accessories,.18,.14,.06,accent,0,1.77,.44,.025)}
+ if(cfg.style==='neon'||cfg.style==='space'){
+  for(const x of [-.89,.89])ellipsoid(accessories,x,1.48,0,.17,.34,.27,mat(cfg.style==='neon'?'#794fe1':'#7e91dd',.3,{emissive:cfg.style==='neon'?'#271456':'#100a24',emissiveIntensity:.35}));
+  if(cfg.style==='space')ellipsoid(accessories,0,.93,.43,.29,.24,.018,mat('#ad82f3',.28,{emissive:'#37155c',emissiveIntensity:.5}));
+ }
+ if(cfg.style==='stars')for(const x of [-.4,.4])ellipsoid(accessories,x,1.4,.48,.27,.22,.025,dark);
+ const shadow=object(root,new T.CircleGeometry(.8,28),new T.MeshBasicMaterial({color:'#221b1c',transparent:true,opacity:.15,depthWrite:false}),0,.026,0);shadow.rotation.x=-Math.PI/2;
+ return {root,body,eyes,pupils,arms,legs,mouth,real:cfg.id==='rusty',id:cfg.id,name:cfg.name,step:0};
 }
 export function animateCharacter(c,t,dt,walking=false,talking=false){
 c.step+=dt*(walking?6.8:1.5);const s=c.step;
