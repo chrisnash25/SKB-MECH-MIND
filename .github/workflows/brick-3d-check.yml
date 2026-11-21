@@ -1,0 +1,57 @@
+name: Brick 3D browser smoke test
+on:
+  push:
+    paths:
+      - 'emotional-support-brick-3d/**'
+      - '.github/workflows/brick-3d-check.yml'
+  workflow_dispatch:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser automation
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start local browser game
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/brick-server.log 2>&1 &
+          sleep 3
+      - name: Verify real 3D rendering and controls
+        run: |
+          cat > /tmp/brick-test.cjs <<'NODE'
+          const { chromium } = require(process.cwd()+'/node_modules/playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+            const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.message));
+            page.on('console',msg=>{if(msg.type()==='error')errors.push(msg.text())});
+            await page.goto('http://127.0.0.1:8765/emotional-support-brick-3d/',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(12000);
+            const state=await page.evaluate(()=>{
+              const c=document.querySelector('#world');
+              const g=c?.getContext('webgl2')||c?.getContext('webgl');
+              return {loaded:!document.querySelector('#load'),width:c?.width,height:c?.height,webgl:!!g,buttons:!!document.querySelector('#realistic')};
+            });
+            await page.screenshot({path:'brick-room-1920x1080.png',fullPage:true});
+            await page.click('#realistic');await page.waitForTimeout(600);
+            await page.keyboard.down('KeyW');await page.waitForTimeout(500);await page.keyboard.up('KeyW');
+            await page.screenshot({path:'brick-rusty-1920x1080.png',fullPage:true});
+            console.log(JSON.stringify({state,errors},null,2));
+            await browser.close();
+            if(errors.length||!state.loaded||!state.webgl||!state.buttons)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/brick-test.cjs
+      - name: Upload rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brick-3d-browser-smoke
+          path: brick-*.png
