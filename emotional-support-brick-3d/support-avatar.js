@@ -1,6 +1,9 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
+import {createVoices} from './voices.js';
 const canvas=document.getElementById('supportAvatar');
+const characterVoice=createVoices({getPlayer:()=>({real:sessionStorage.getItem('esb-character')==='rusty'}),onStart:(line,ms)=>window.__supportAvatarSpeak?.(ms),onEnd:()=>{}});
+window.__supportSpeakText=text=>characterVoice.speak(text);
 if(canvas){
  let renderer=null,model=null,rig=null,scene=null,camera=null,current='',speakingUntil=0,rotation=0;
  try{
@@ -32,6 +35,7 @@ if(canvas){
   load(sessionStorage.getItem('esb-character')==='rusty'?'rusty':'bricko');
   window.__supportAvatarSpeak=ms=>{speakingUntil=performance.now()+ms};
   canvas.addEventListener('pointerdown',()=>{rotation+=.55});
+  canvas.addEventListener('click',()=>characterVoice.speak('hello',{key:'hello'}));
   function frame(time){
     requestAnimationFrame(frame);
     if(document.hidden)return;
