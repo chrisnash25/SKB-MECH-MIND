@@ -16,6 +16,17 @@ jobs:
           curl -fL --retry 2 --max-time 90 -o BrickoSam.glb 'https://d8j0ntlcm91z4.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/hf_20261121_195759_a600eb0f-dc3d-460d-a2a1-a4c77cf81ffe.glb'
           ls -lh BrickoSam.glb
           python3 -c "assert open('BrickoSam.glb','rb').read(4)==b'glTF'"
+      - name: Add sculpted textured brick to browser game
+        run: |
+          mkdir -p emotional-support-brick-3d/assets
+          cp BrickoSam.glb emotional-support-brick-3d/assets/bricko.glb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add emotional-support-brick-3d/assets/bricko.glb
+          git commit -m "Add real textured 3D Bricko GLB model" || true
+          git fetch origin main
+          git rebase origin/main
+          git push
       - uses: actions/upload-artifact@v4
         with:
           name: bricko-generated-mesh
