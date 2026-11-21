@@ -1,6 +1,7 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
+import { woodTexture,masonryTexture,linenTexture } from './surface-textures.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
 const camera=new T.PerspectiveCamera(50,innerWidth/innerHeight,.1,80);
 const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true,preserveDrawingBuffer:new URLSearchParams(location.search).has('capture')});
@@ -17,16 +18,24 @@ let state=71523;const random=()=>((state=(Math.imul(state,1664525)+1013904223)>>
 for(let i=0;i<12000;i++){const x=random()*256,y=random()*256;ctx.fillStyle=random()>.5?'#ffffff18':'#00000018';ctx.fillRect(x,y,1.8,1.8);}
 const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(2,2);t.colorSpace=T.SRGBColorSpace;return t;
 }
-const wood=mat('#6e4833'),beam=mat('#493126'),wall=mat('#a58a76'),stone=mat('#975b45'),
-sofa=mat('#ffffff',1,{map:fabricTexture('#655d64')}),cream=mat('#ffffff',1,{map:fabricTexture('#a9957d'),bumpScale:.005});
+const woodMap=woodTexture('#916246'),beamMap=woodTexture('#503a2d');
+const wood=mat('#ffffff',.79,{map:woodMap,bumpMap:woodMap,bumpScale:.012});
+const beam=mat('#ffffff',.92,{map:beamMap,bumpMap:beamMap,bumpScale:.014});
+const wall=mat('#a58a76',.94),stone=mat('#975b45');
+const fabricMap=linenTexture('#7f7477'),rugMap=linenTexture('#b9a68c');
+const sofa=mat('#ffffff',.99,{map:fabricMap,bumpMap:fabricMap,bumpScale:.006});
+const cream=mat('#ffffff',1,{map:rugMap,bumpMap:rugMap,bumpScale:.01});
 block(scene,15,.25,13,wood,0,-.2,-1);
-for(let i=0;i<37;i++){const color=mat(new T.Color().setHSL(.07,.2,.31+(i%7)*.013));block(scene,.38,.04,13,color,-7.3+i*.4,-.055,-1,.005)}
+const floorMaps=['#8b5c43','#785340','#99725a','#805a43'].map(c=>{const map=woodTexture(c);map.repeat.set(1,5);return mat('#ffffff',.82,{map,bumpMap:map,bumpScale:.01})});
+for(let i=0;i<37;i++){block(scene,.38,.04,13,floorMaps[i%floorMaps.length],-7.3+i*.4,-.055,-1,.007)}
+
 block(scene,15,7.3,.18,wall,0,3.5,-7.5);
 block(scene,.22,7.3,13,wall,-7.4,3.5,-.9);
 block(scene,.22,7.3,13,wall,7.4,3.5,-.9);
 // Four instanced masonry materials: 4 draw calls instead of hundreds.
 const colors=['#a05f49','#945542','#8b5140','#b06a52'];
-const batches=colors.map(color=>new T.InstancedMesh(new T.BoxGeometry(.47,.2,.12),mat(color),240));
+const brickMaterials=colors.map(c=>{const map=masonryTexture(c);return mat('#ffffff',.99,{map,bumpMap:map,bumpScale:.025})});
+const batches=colors.map((color,i)=>new T.InstancedMesh(new T.BoxGeometry(.47,.2,.12),brickMaterials[i],240));
 const counts=[0,0,0,0],pose=new T.Object3D();
 for(let row=0;row<30;row++)for(let col=0;col<30;col++){
 const x=-7.1+col*.49+(row%2)*.2,y=.18+row*.225;
