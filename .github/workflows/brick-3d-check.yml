@@ -42,7 +42,7 @@ jobs:
           await page.waitForTimeout(6500);
           const state=await page.evaluate(()=>{
           const c=document.querySelector('#world');
-          return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0};
+          return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0,models:window.__brickModelStatus||{}};
           });
           console.log('INITIAL RENDER:',JSON.stringify({state,errors}));
           async function saveCanvas(filename){
@@ -59,7 +59,7 @@ jobs:
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
-          if(errors.length||!state.loaded||!state.webgl||state.frames<2||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(errors.length||!state.loaded||!state.webgl||state.frames<2||!state.models.cartoon?.loaded||!state.models.realistic?.loaded||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
