@@ -16,11 +16,18 @@ for(let i=0;i<37;i++){const color=mat(new T.Color().setHSL(.07,.2,.31+(i%7)*.013
 block(scene,15,7.3,.18,wall,0,3.5,-7.5);
 block(scene,.22,7.3,13,wall,-7.4,3.5,-.9);
 block(scene,.22,7.3,13,wall,7.4,3.5,-.9);
+// Four instanced masonry materials: 4 draw calls instead of hundreds.
+const colors=['#a05f49','#945542','#8b5140','#b06a52'];
+const batches=colors.map(color=>new T.InstancedMesh(new T.BoxGeometry(.47,.2,.12),mat(color),240));
+const counts=[0,0,0,0],pose=new T.Object3D();
 for(let row=0;row<30;row++)for(let col=0;col<30;col++){
-const x=-7.1+col*.49+row%2*.2,y=.18+row*.225;
+const x=-7.1+col*.49+(row%2)*.2,y=.18+row*.225;
 if(x>1&&x<6&&y>2&&y<5.8)continue;
-block(scene,.47,.2,.12,mat(['#a05f49','#945542','#8b5140','#b06a52'][(row+col)%4]),x,y,-7.35,.012);
+const index=(row+col)%4;
+pose.position.set(x,y,-7.35);pose.updateMatrix();
+batches[index].setMatrixAt(counts[index]++,pose.matrix);
 }
+batches.forEach((batch,i)=>{batch.count=counts[i];batch.receiveShadow=true;batch.instanceMatrix.needsUpdate=true;scene.add(batch)});
 const sky=document.createElement('canvas');sky.width=512;sky.height=512;const ctx=sky.getContext('2d');
 const grad=ctx.createLinearGradient(0,0,0,512);grad.addColorStop(0,'#8ca3b2');grad.addColorStop(.5,'#eac29f');grad.addColorStop(1,'#657b66');ctx.fillStyle=grad;ctx.fillRect(0,0,512,512);
 ctx.fillStyle='#fff2b8';ctx.beginPath();ctx.arc(355,260,40,0,Math.PI*2);ctx.fill();
