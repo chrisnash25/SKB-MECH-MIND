@@ -2,7 +2,7 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.modul
 import {mat,block,ellipsoid,createCharacter,animateCharacter} from './models.js';
 const scene=new T.Scene();scene.background=new T.Color('#d2b7a0');
 const camera=new T.PerspectiveCamera(59,innerWidth/innerHeight,.1,80);
-const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true});
+const renderer=new T.WebGLRenderer({canvas:document.querySelector('#world'),antialias:true,preserveDrawingBuffer:new URLSearchParams(location.search).has('capture')});
 renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
 renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
@@ -114,6 +114,6 @@ player.root.rotation.y=T.MathUtils.lerp(player.root.rotation.y,Math.atan2(moveme
 animateCharacter(player,clock,dt,active,now<speakingUntil);
 animateCharacter(buddy,clock+1.1,dt,false,false);
 const target=player.root.position.clone().add(new T.Vector3(0,1.05,0));
-camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*4.4,2.3+pitch*3,Math.cos(yaw)*4.4)),.08);camera.lookAt(target);renderer.render(scene,camera)}
+camera.position.lerp(target.clone().add(new T.Vector3(Math.sin(yaw)*4.4,2.3+pitch*3,Math.cos(yaw)*4.4)),.08);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
