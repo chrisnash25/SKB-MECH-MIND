@@ -51,9 +51,13 @@ jobs:
           const bytes=Buffer.from(data.split(',')[1],'base64');fs.writeFileSync(filename,bytes);console.log('Captured',filename,bytes.length,'bytes');return bytes.length;
           }
           const first=await saveCanvas('brick-room-960x540.png');
-          await page.evaluate(()=>document.getElementById('realistic').click());await page.waitForTimeout(1000);
+          await page.evaluate(()=>document.querySelector('[data-brick-id="rusty"]').click());await page.waitForTimeout(1000);
           await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW',key:'w'})));await page.waitForTimeout(500);await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyW',key:'w'})));
           const second=await saveCanvas('brick-rusty-960x540.png');
+          for(const id of ['pulse','calm','spark','blocky','cozy','zapp','echo','gizmo']){
+            await page.locator('[data-brick-id="'+id+'"]').click();await page.waitForTimeout(180);
+            await saveCanvas('brick-'+id+'-960x540.png');
+          }
           const features=await page.evaluate(()=>{
             const game=window.__brickActivities;
             if(!game)throw new Error('3D activity manager missing');
@@ -82,7 +86,7 @@ jobs:
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
-          if(Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
