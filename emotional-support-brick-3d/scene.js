@@ -129,6 +129,22 @@ model.position.set(-center.x,-bounds.min.y,-center.z);
 const pivot=new T.Group();pivot.add(model);
 const scl=1.93/Math.max(size.x,.01);pivot.scale.setScalar(scl);
 character.root.add(pivot);character.model3d=pivot;character.body.visible=false;
+// Independent expressive face overlay for imported GLBs, which lack eye bones.
+const face=new T.Group();pivot.add(face);character.faceRig=face;
+const fw=Math.max(.65,size.x),fh=Math.max(.55,size.y),front=bounds.max.z-center.z+.025;
+const faceY=-bounds.min.y+fh*.64;
+const eyeWhite=new T.MeshStandardMaterial({color:'#fffaf2',roughness:.32});
+const eyeDark=new T.MeshStandardMaterial({color:character.real?'#282324':'#2e6c91',roughness:.26});
+const mouthDark=new T.MeshStandardMaterial({color:'#4a2525',roughness:.62});
+const faceEyes=[];
+for(const sign of [-1,1]){
+ const eye=new T.Group();eye.position.set(sign*fw*.21,faceY,front);face.add(eye);
+ const sclera=new T.Mesh(new T.SphereGeometry(1,20,12),eyeWhite);sclera.scale.set(fw*.11,fh*.125,.022);eye.add(sclera);
+ const pupil=new T.Mesh(new T.SphereGeometry(1,18,12),eyeDark);pupil.scale.set(fw*.059,fh*.075,.026);pupil.position.z=.028;eye.add(pupil);faceEyes.push({eye,pupil});
+}
+const lip=new T.Mesh(new T.SphereGeometry(1,20,12),mouthDark);
+lip.position.set(0,faceY-fh*.23,front+.005);lip.scale.set(fw*.105,fh*.027,.018);face.add(lip);
+character.faceEyes=faceEyes;character.faceMouth=lip;
 character.rig={};for(const part of ['body','leftArm','rightArm','leftLeg','rightLeg'])character.rig[part]=model.getObjectByName(part);
 character.waveUntil=0;
 }
@@ -215,6 +231,16 @@ player.root.rotation.y=T.MathUtils.lerp(player.root.rotation.y,Math.atan2(moveme
 animateCharacter(player,clock,dt,active,now<speakingUntil);
 animateCharacter(buddy,clock+1.1,dt,false,false);
 animateRig(player,clock,active,dt);animateRig(buddy,clock+1.1,false,dt);
+for(const c of [player,buddy])if(c.faceEyes){
+ const speaking=c===player&&now<speakingUntil;
+ for(const {eye,pupil} of c.faceEyes){
+   const blink=(clock%5.1>4.91&&clock%5.1<5.04)?.12:1;
+   eye.scale.y=T.MathUtils.damp(eye.scale.y,blink,16,dt);
+   pupil.position.x=T.MathUtils.damp(pupil.position.x,Math.sin(clock*.78)*.026,5,dt);
+   pupil.position.y=T.MathUtils.damp(pupil.position.y,Math.sin(clock*.52)*.012,5,dt);
+ }
+ if(c.faceMouth)c.faceMouth.scale.y=T.MathUtils.damp(c.faceMouth.scale.y,speaking?.065+Math.abs(Math.sin(clock*13))*.06:.027,12,dt);
+}
 if(player.model3d){player.model3d.position.y=active?Math.abs(Math.sin(clock*6.8))*.024:Math.sin(clock*1.6)*.009;player.model3d.rotation.z=active?Math.sin(clock*6.8)*.008:Math.sin(clock*.6)*.004;}
 if(buddy.model3d){buddy.model3d.position.y=Math.sin(clock*.9)*.008;buddy.model3d.rotation.z=Math.sin(clock*.7)*.006;}
 activities.tick(now,dt);
