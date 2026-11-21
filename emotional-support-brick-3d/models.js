@@ -76,7 +76,10 @@ export function animateCharacter(c,t,dt,walking=false,talking=false){
 c.step+=dt*(walking?9:1.5);const s=c.step;
 c.body.position.y=walking?Math.abs(Math.sin(s))*.08:Math.sin(t*1.5)*.016;
 c.body.rotation.z=walking?Math.sin(s)*.025:Math.sin(t*.72)*.009;
-for(let i=0;i<2;i++){c.legs[i].rotation.x=walking?Math.sin(s+i*Math.PI)*.48:0;c.arms[i].rotation.x=walking?Math.sin(s+i*Math.PI+Math.PI)*.4:Math.sin(t*1.2+i)*.04;}
+for(let i=0;i<2;i++){
+c.legs[i].rotation.x=c.seated?-1.08:(walking?Math.sin(s+i*Math.PI)*.48:0);
+c.arms[i].rotation.x=c.seated?-.30:(walking?Math.sin(s+i*Math.PI+Math.PI)*.4:Math.sin(t*1.2+i)*.04);
+}
 const blink=(t%4.6>3.92&&t%4.6<4.05)?.10:1;
 for(const eye of c.eyes)eye.scale.y=T.MathUtils.lerp(eye.scale.y,blink,.28);
 c.mouth.scale.y=T.MathUtils.lerp(c.mouth.scale.y,talking?(Math.sin(t*17)**2)*.8+.55:1,.22);
