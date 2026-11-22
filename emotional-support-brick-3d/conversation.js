@@ -11,9 +11,9 @@ export function createConversation(){
   let m=q.match(/(?:my name is|call me|i'm called)\s+([a-z][a-z'-]{1,22})/i);
   if(m){memory.name=m[1][0].toUpperCase()+m[1].slice(1);return real?'Alright, '+memory.name+'. Good to meet you properly. What are we chatting about?':'Oh! '+memory.name+'! I love knowing who I am talking to. What should we do together?'}
   // Answer simple arithmetic directly instead of returning a generic question.
-  const arithmetic=q.replace(/[?!.]/g,'').replace(/\\bwhat(?:'s| is)|\\bcalculate|\\bplease|\\bcan you tell me|\\bequals|\\banswer|\\bthe|\\bof\\b/g,' ').trim();
+  const arithmetic=q.replace(/[?!.]/g,'').replace(/\bwhat(?:'s| is)|\bcalculate|\bplease|\bcan you tell me|\bequals|\banswer|\bthe|\bof\b/g,' ').trim();
   const words={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10};
-  const math=arithmetic.match(/\\b(\\d+(?:\\.\\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten)\\s*(times|multiplied by|x|\\*|plus|\\+|minus|-|divided by|\\/)\\s*(\\d+(?:\\.\\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten)\\b/i);
+  const math=arithmetic.match(/\b(\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten)\s*(times|multiplied by|x|\*|plus|\+|minus|-|divided by|\/)\s*(\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten)\b/i);
   if(math){const n=v=>Object.hasOwn(words,v)?words[v]:Number(v),a=n(math[1]),b=n(math[3]);let result;switch(math[2]){case 'times':case 'multiplied by':case 'x':case '*':result=a*b;break;case 'plus':case '+':result=a+b;break;case 'minus':case '-':result=a-b;break;default:result=b===0?null:a/b;}return result===null?"You can't divide by zero.":math[1]+' '+math[2]+' '+math[3]+' is '+result+'.';}
   const address=memory.name?', '+memory.name:'';
   if(/\b(?:sad|depressed|down|upset|crying|miserable|heartbroken|grief|lost someone)\b/.test(q))return "I'm sorry you're feeling that way"+address+". Want to tell me what happened, or would you rather I distract you with a joke? I'm listening.";
