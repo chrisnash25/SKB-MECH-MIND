@@ -14,7 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Blender
-        run: sudo apt-get update -qq && sudo apt-get install -y blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
+      - name: Verify Blender Python dependencies
+        run: blender -b -noaudio --python-expr "import numpy; print('NumPy available:', numpy.__version__)"
       - name: Export ten individually rigged characters
         run: blender -b -noaudio --python tools/build_brick_cast.py
       - name: Validate generated GLB files
