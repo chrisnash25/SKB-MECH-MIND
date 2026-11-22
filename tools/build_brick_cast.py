@@ -30,8 +30,8 @@ def cube(name,loc,scale,mat,bevel=.07):
  o.modifiers.new('Weighted normals','WEIGHTED_NORMAL');o.data.materials.append(mat);return o
 def sphere(name,loc,scale,mat):
  bpy.ops.mesh.primitive_uv_sphere_add(segments=20,ring_count=12,location=loc);o=bpy.context.object;o.name=name;o.scale=scale;o.data.materials.append(mat);return o
-def cylinder(name,loc,r,depth,mat):
- bpy.ops.mesh.primitive_cylinder_add(vertices=24,radius=r,depth=depth,location=loc);o=bpy.context.object;o.name=name;o.data.materials.append(mat);return o
+def cylinder(name,loc,r,depth,mat,rotation=(0,0,0)):
+ bpy.ops.mesh.primitive_cylinder_add(vertices=24,radius=r,depth=depth,location=loc,rotation=rotation);o=bpy.context.object;o.name=name;o.data.materials.append(mat);return o
 def bind(o,arm,bone):
  mod=o.modifiers.new('Armature deformation','ARMATURE');mod.object=arm
  vg=o.vertex_groups.new(name=bone);vg.add(list(range(len(o.data.vertices))),1,'REPLACE')
