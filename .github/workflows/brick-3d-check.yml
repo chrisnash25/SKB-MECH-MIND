@@ -89,7 +89,13 @@ jobs:
           console.log('RECORDED VOICES:',JSON.stringify(voiceFiles));
 
           await page.setViewportSize({width:1920,height:1080});
-          await page.waitForTimeout(950);
+          // Software WebGL may render a frame very slowly: don't sample before
+          // the viewport resize has actually reached the WebGL drawing buffer.
+          await page.evaluate(()=>window.dispatchEvent(new Event('resize')));
+          await page.waitForFunction(()=>{
+            const c=document.getElementById('world');
+            return c && c.width>=1920 && c.height>=1080;
+          },null,{timeout:60000,polling:250});
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
