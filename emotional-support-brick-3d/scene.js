@@ -288,6 +288,20 @@ if(player.model3d && now<speakingUntil && playMode!=='sleep'){
 
 const target=inGame?new T.Vector3(1.4,playMode==='memory'?.40:1.15,.5):player.root.position.clone().add(new T.Vector3(0,1.1,0));
 const offset=inGame?new T.Vector3(Math.sin(yaw)*3.8,2.1+pitch*2.3,Math.cos(yaw)*3.8):new T.Vector3(Math.sin(yaw)*4.55,1.38+pitch*2.3,Math.cos(yaw)*4.55);
-camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
+camera.position.lerp(target.clone().add(offset),.12);camera.lookAt(target);syncRendererViewport();renderer.render(scene,camera);window.__brickFrames=(window.__brickFrames||0)+1;window.__brickDrawCalls=renderer.info.render.calls;}
 requestAnimationFrame(frame);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+// Keep WebGL's drawing buffer in sync with the actual browser viewport.
+// Checking dimensions in the render loop also catches delayed/missed resize
+// events on slow software-rendered CI browsers and mobile orientation changes.
+let lastViewportWidth=innerWidth,lastViewportHeight=innerHeight;
+function syncRendererViewport(force=false){
+  const width=Math.max(1,Math.round(window.innerWidth));
+  const height=Math.max(1,Math.round(window.innerHeight));
+  if(!force && width===lastViewportWidth && height===lastViewportHeight)return;
+  lastViewportWidth=width;lastViewportHeight=height;
+  camera.aspect=width/height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width,height,false);
+}
+addEventListener('resize',()=>syncRendererViewport(true));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>syncRendererViewport(true));
