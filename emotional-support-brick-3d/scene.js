@@ -199,8 +199,8 @@ function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(id){
  const cast=BRICK_CAST.find(c=>c.id===id)||BRICK_CAST[0];
- scene.remove(player.root);player=premium(cast.id);player.seated=false;player.root.rotation.set(0,0,0);player.root.position.set(-.6,0,1.1);scene.add(player.root);
- scene.remove(buddy.root);buddy=premium(cast.id==='bricko'?'rusty':'bricko');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+ scene.remove(buddy.root);scene.remove(player.root);player=premium(cast.id);player.seated=false;player.root.rotation.set(0,0,0);player.root.position.set(-.6,0,1.1);scene.add(player.root);
+ buddy=premium(cast.id==='bricko'?'rusty':'bricko');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
  document.getElementById('name').textContent=cast.name;
  for(const button of document.querySelectorAll('[data-brick-id]'))button.setAttribute('aria-pressed',String(button.dataset.brickId===cast.id));
  try{sessionStorage.setItem('esb-character',cast.id)}catch{}
