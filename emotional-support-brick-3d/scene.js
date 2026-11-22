@@ -117,8 +117,14 @@ for(const x of [4.54,4.74]){const ear=new T.Mesh(new T.ConeGeometry(.095,.20,3),
 for(let i=0;i<4;i++){const stripe=ellipsoid(scene,4.81+i*.16,1.51,-5.03,.045,.012,.19,catStripes);stripe.rotation.z=.15}
 ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
 
-let player=upgradeCharacter(createCharacter('bricko'));player.root.position.set(-.6,0,1.1);scene.add(player.root);
-let buddy=upgradeCharacter(createCharacter('rusty'));buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+// Cache the ten custom 3D avatars, avoiding expensive mesh and texture rebuilds on Xbox.
+const premiumCache=new Map();
+function premium(id){
+  if(!premiumCache.has(id))premiumCache.set(id,upgradeCharacter(createCharacter(id)));
+  return premiumCache.get(id);
+}
+let player=premium('bricko');player.root.position.set(-.6,0,1.1);scene.add(player.root);
+let buddy=premium('rusty');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 // Production asset art pass: independently generated textured three-dimensional GLBs.
 const templates={cartoon:null,realistic:null};
 function dressWithModel(character,template){
@@ -192,8 +198,8 @@ function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(id){
  const cast=BRICK_CAST.find(c=>c.id===id)||BRICK_CAST[0];
- scene.remove(player.root);player=upgradeCharacter(createCharacter(cast.id));player.root.position.set(-.6,0,1.1);scene.add(player.root);
- scene.remove(buddy.root);buddy=upgradeCharacter(createCharacter(cast.id==='bricko'?'rusty':'bricko'));buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+ scene.remove(player.root);player=premium(cast.id);player.seated=false;player.root.rotation.set(0,0,0);player.root.position.set(-.6,0,1.1);scene.add(player.root);
+ scene.remove(buddy.root);buddy=premium(cast.id==='bricko'?'rusty':'bricko');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
  document.getElementById('name').textContent=cast.name;
  for(const button of document.querySelectorAll('[data-brick-id]'))button.setAttribute('aria-pressed',String(button.dataset.brickId===cast.id));
  try{sessionStorage.setItem('esb-character',cast.id)}catch{}
