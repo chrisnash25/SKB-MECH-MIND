@@ -32,8 +32,8 @@ jobs:
             await page.goto('http://127.0.0.1:8765/emotional-support-brick-3d/?premium-test=1',{waitUntil:'domcontentloaded'});
             await page.waitForFunction(()=>window.__premiumCastActive===true && document.querySelectorAll('[data-brick-id]').length===10,{timeout:60000});
             const ids=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'];
-            for(const id of ids){await page.locator('[data-brick-id="'+id+'"]').click();await page.waitForTimeout(130)}
-            await page.locator('[data-brick-id="bricko"]').click();
+            for(const id of ids){await page.evaluate(id=>document.querySelector('[data-brick-id="'+id+'"]').click(),id);await page.waitForTimeout(80)}
+            await page.evaluate(()=>document.querySelector('[data-brick-id="bricko"]').click());
             await page.waitForTimeout(1300);
             const status=await page.evaluate(()=>({cast:window.__premiumCastIds,frames:window.__brickFrames,draws:window.__brickDrawCalls,canvas:[document.querySelector('#world').width,document.querySelector('#world').height],premium:window.__premiumCastActive}));
             await page.screenshot({path:'premium-game-1920x1080.png'});
