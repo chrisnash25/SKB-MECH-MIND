@@ -98,8 +98,9 @@ jobs:
           },null,{timeout:60000,polling:250});
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
+          const fullHD=await saveCanvas('brick-1080p.png');
           await browser.close();
-          if(modelFiles.some(m=>m.status!==200||m.size<5000||m.magic!=='glTF')||Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(modelFiles.some(m=>m.status!==200||m.size<5000||m.magic!=='glTF')||Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080||fullHD<30000)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
