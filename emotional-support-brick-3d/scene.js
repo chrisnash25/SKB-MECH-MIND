@@ -1,6 +1,7 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 import {mat,block,ellipsoid,createCharacter,animateCharacter,BRICK_CAST} from './models.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneSkinnedModel } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/utils/SkeletonUtils.js';
 import { woodTexture,masonryTexture,linenTexture } from './surface-textures.js';
 import { createVoices } from './voices.js';
 import { createConversation } from './conversation.js';
@@ -154,14 +155,14 @@ const loader=new GLTFLoader();
 function applyCastModel(character){
  const asset=castAssets.get(character.id);if(!asset)return;
  if(character.model3d)character.root.remove(character.model3d);
- const model=asset.clone(true);
- model.rotation.y=Math.PI; // Blender models face -Y; glTF conversion maps that to -Z.
+ const model=cloneSkinnedModel(asset);
+ model.rotation.y=Math.PI; // Keep the character facing the camera.
  const bounds=new T.Box3().setFromObject(model);
  const size=bounds.getSize(new T.Vector3());
  const pivot=new T.Group();pivot.scale.setScalar(1.95/Math.max(size.y,.01));
  model.position.y=-bounds.min.y;
  pivot.add(model);character.root.add(pivot);character.model3d=pivot;character.body.visible=false;
- model.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+ model.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;n.frustumCulled=false}});
  character.rig={leftArm:model.getObjectByName('leftArm'),rightArm:model.getObjectByName('rightArm'),leftLeg:model.getObjectByName('leftLeg'),rightLeg:model.getObjectByName('rightLeg'),body:model.getObjectByName('body')};
  // Facial overlay is attached only if the authored model lacks face animation.
 }
