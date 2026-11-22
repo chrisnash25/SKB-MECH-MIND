@@ -4,9 +4,9 @@ import { dialogue } from './dialogue.js';
 export const VOICE_CAST={
  bricko:{name:'Bricko',presentation:'bright youthful masculine',rate:1.07,pitch:1.12,preferred:/ryan|george|daniel|male|oliver/i,hello:"Hey! Bricko here! What's the plan today?"},
  rusty:{name:'Rusty',presentation:'dry mature masculine',rate:.91,pitch:.79,preferred:/ryan|thomas|george|daniel|male/i,hello:"Alright mate. Rusty here. What's on your mind?"},
- pulse:{name:'Pulse',presentation:'upbeat and rhythmic',rate:1.14,pitch:1.04,preferred:/ryan|george|male|jenny/i,hello:"Yo! Pulse in the house! Ready to turn this day around?"},
- calm:{name:'Calm',presentation:'gentle feminine',rate:.84,pitch:1.12,preferred:/sonia|libby|maisie|female|susan/i,hello:"Hello. I'm Calm. We can take things at your pace."},
- spark:{name:'Spark',presentation:'bubbly feminine',rate:1.17,pitch:1.33,preferred:/maisie|libby|sonia|jenny|female/i,hello:"Hiya! Spark here! Oh, I'm so happy to see you!"},
+ pulse:{name:'Pulse',presentation:'upbeat rhythmic masculine',rate:1.14,pitch:1.04,preferred:/ryan|george|male|jenny/i,hello:"Yo! Pulse in the house! Ready to turn this day around?"},
+ calm:{name:'Calm',presentation:'gentle reassuring masculine',rate:.84,pitch:.90,preferred:/ryan|george|daniel|male|oliver/i,hello:"Hello. I'm Calm. We can take things at your pace."},
+ spark:{name:'Spark',presentation:'playful lively masculine',rate:1.17,pitch:1.18,preferred:/ryan|george|daniel|male|oliver/i,hello:"Hiya! Spark here! Oh, I'm so happy to see you!"},
  blocky:{name:'Blocky',presentation:'measured scholarly masculine',rate:.95,pitch:.9,preferred:/thomas|daniel|george|male/i,hello:"Ah, hello! Blocky here. What shall we discover today?"},
  cozy:{name:'Cozy',presentation:'warm reassuring feminine',rate:.88,pitch:1.04,preferred:/sonia|libby|susan|female/i,hello:"Hi, lovely. I'm Cozy. Fancy a gentle chat?"},
  zapp:{name:'Zapp',presentation:'energetic sporty masculine',rate:1.2,pitch:1.16,preferred:/ryan|george|male/i,hello:"Hey! Zapp here! Let's make today a good one!"},
@@ -84,7 +84,9 @@ export function createVoices({getPlayer,onStart,onEnd}){
     const text=(key==='hello'?profile.hello:null)||(hasRecording?lines[legacy][key]:null)|| (key?varied(legacy,key):null)||lines[legacy]?.[key]||input;
     cancel();const myToken=token;
     onStart?.(text,Math.max(1300,text.length*75));spokenAt=performance.now();
-    const url=key==='hello'&&opts.recorded!==false?recordedGreetings[who]:(hasRecording?recorded[legacy]?.[key]:null);
+    // Calm and Spark now use masculine live synthesis until matching recorded actor lines are supplied.
+    const revoice=who==='calm'||who==='spark';
+    const url=key==='hello'&&opts.recorded!==false&&!revoice?recordedGreetings[who]:(hasRecording?recorded[legacy]?.[key]:null);
     if(url&&opts.recorded!==false){
       const a=new Audio(url);audio=a;a.preload='auto';a.volume=.94;
       a.onended=()=>{if(token===myToken){audio=null;end()}};
