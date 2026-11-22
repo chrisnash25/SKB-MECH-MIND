@@ -1,5 +1,6 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 import {mat,block,ellipsoid,createCharacter,animateCharacter,BRICK_CAST} from './models.js';
+import {upgradeCharacter} from './premium-cast.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinnedModel } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/utils/SkeletonUtils.js';
 import { woodTexture,masonryTexture,linenTexture } from './surface-textures.js';
@@ -116,8 +117,14 @@ for(const x of [4.54,4.74]){const ear=new T.Mesh(new T.ConeGeometry(.095,.20,3),
 for(let i=0;i<4;i++){const stripe=ellipsoid(scene,4.81+i*.16,1.51,-5.03,.045,.012,.19,catStripes);stripe.rotation.z=.15}
 ellipsoid(scene,4.62,1.41,-4.71,.07,.014,.012,catPink);
 
-let player=createCharacter('bricko');player.root.position.set(-.6,0,1.1);scene.add(player.root);
-let buddy=createCharacter('rusty');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+// Cache the ten custom 3D avatars, avoiding expensive mesh and texture rebuilds on Xbox.
+const premiumCache=new Map();
+function premium(id){
+  if(!premiumCache.has(id))premiumCache.set(id,upgradeCharacter(createCharacter(id)));
+  return premiumCache.get(id);
+}
+let player=premium('bricko');player.root.position.set(-.6,0,1.1);scene.add(player.root);
+let buddy=premium('rusty');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
 // Production asset art pass: independently generated textured three-dimensional GLBs.
 const templates={cartoon:null,realistic:null};
 function dressWithModel(character,template){
@@ -150,9 +157,13 @@ character.rig={};for(const part of ['body','leftArm','rightArm','leftLeg','right
 character.waveUntil=0;
 }
 // Keep procedural characters available until the individually authored GLBs load.
+window.__premiumCastActive=true;
+window.__premiumCastIds=BRICK_CAST.map(c=>c.id);
 const castAssets=new Map();
 const loader=new GLTFLoader();
 function applyCastModel(character){
+ // Preserve the new reference-specific, articulated 3D version in the live game.
+ if(character.premium3d)return;
  const asset=castAssets.get(character.id);if(!asset)return;
  if(character.model3d)character.root.remove(character.model3d);
  const model=cloneSkinnedModel(asset);
@@ -168,7 +179,8 @@ function applyCastModel(character){
  character.rig={leftArm:model.getObjectByName('leftArm'),rightArm:model.getObjectByName('rightArm'),leftLeg:model.getObjectByName('leftLeg'),rightLeg:model.getObjectByName('rightLeg'),body:model.getObjectByName('body')};
  // Facial overlay is attached only if the authored model lacks face animation.
 }
-for(const cast of BRICK_CAST){
+// Loading the old low-detail GLBs is deliberately disabled in premium mode.
+if(!window.__premiumCastActive)for(const cast of BRICK_CAST){
  loader.load('./assets/cast/'+cast.id+'.glb',gltf=>{
   castAssets.set(cast.id,gltf.scene);
   window.__brickModelStatus=window.__brickModelStatus||{};
@@ -187,8 +199,8 @@ function say(text,opts={}){return voiceSystem.speak(text,opts)}
 const activities=createActivities({scene,camera,canvas:world,getPlayer:()=>player,speak:key=>say(key,{key})});window.__brickActivities=activities;
 function select(id){
  const cast=BRICK_CAST.find(c=>c.id===id)||BRICK_CAST[0];
- scene.remove(player.root);player=createCharacter(cast.id);player.root.position.set(-.6,0,1.1);scene.add(player.root);
- scene.remove(buddy.root);buddy=createCharacter(cast.id==='bricko'?'rusty':'bricko');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
+ scene.remove(buddy.root);scene.remove(player.root);player=premium(cast.id);player.seated=false;player.root.rotation.set(0,0,0);player.root.position.set(-.6,0,1.1);scene.add(player.root);
+ buddy=premium(cast.id==='bricko'?'rusty':'bricko');buddy.seated=true;buddy.root.position.set(1.3,.18,-1.2);buddy.root.rotation.y=-.3;scene.add(buddy.root);
  document.getElementById('name').textContent=cast.name;
  for(const button of document.querySelectorAll('[data-brick-id]'))button.setAttribute('aria-pressed',String(button.dataset.brickId===cast.id));
  try{sessionStorage.setItem('esb-character',cast.id)}catch{}

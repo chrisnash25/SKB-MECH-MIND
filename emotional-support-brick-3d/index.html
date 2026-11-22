@@ -37,6 +37,8 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
 #selector button{font-size:12px;padding:7px 9px;white-space:nowrap}
 #supportLaunch{top:212px}
 @media(max-width:690px){#selector{top:66px;max-height:89px;max-width:calc(100vw - 18px);gap:3px}#selector button{padding:5px 7px;font-size:11px}#supportLaunch{top:164px;left:10px}#speech{top:29%}}
+#studioLaunch{position:absolute;right:18px;top:122px;pointer-events:auto;padding:10px 13px;border:1px solid #9e84da;border-radius:9px;background:#2e2055e9;color:#fff;text-decoration:none;font:700 13px system-ui;box-shadow:0 2px 8px #2118}
+@media(max-width:690px){#studioLaunch{top:164px;right:10px;padding:8px;font-size:11px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body>
@@ -44,6 +46,7 @@ button:hover{background:#f5e8d0}button:focus-visible{outline:3px solid #fff}butt
 <div id="overlay">
  <header id="title"><strong>Emotional Support<br>Brick Game</strong><small>Together We're Stronger!</small></header>
  <div id="selector" role="group" aria-label="Choose a brick character"></div>
+ <a id="studioLaunch" href="./cast-studio.html" aria-label="Preview and export individual 3D character models">3D Character Studio</a>
  <a id="supportLaunch" href="./support.html" aria-label="Open dedicated emotional support page">Emotional Support</a>
  <div id="status">3D Lounge</div>
  <div id="speech">Welcome home. Fancy a chat?</div>

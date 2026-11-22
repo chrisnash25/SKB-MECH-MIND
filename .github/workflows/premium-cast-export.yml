@@ -1,0 +1,79 @@
+name: Export 10 premium animated GLBs
+on:
+  push:
+    branches: [premium-ten-character-game-integration]
+    paths:
+      - 'emotional-support-brick-3d/premium-cast.js'
+      - 'emotional-support-brick-3d/cast-studio.js'
+      - 'emotional-support-brick-3d/cast-studio.html'
+      - '.github/workflows/premium-cast-export.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start project
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/cast-http.log 2>&1 &
+          sleep 3
+      - name: Export and structurally inspect all ten GLB models
+        run: |
+          cat > /tmp/export-cast.cjs <<'NODE'
+          const {chromium}=require(process.cwd()+'/node_modules/playwright');
+          const fs=require('fs'),path=require('path');
+          const names=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'];
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+            const page=await browser.newPage({viewport:{width:1280,height:720},acceptDownloads:true});
+            const errs=[];page.on('pageerror',e=>errs.push(e.message));
+            await page.goto('http://127.0.0.1:8765/emotional-support-brick-3d/cast-studio.html',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.__studioReady===true,{timeout:45000});
+            const output='emotional-support-brick-3d/assets/premium';
+            fs.mkdirSync(output,{recursive:true});
+            for(const id of names){
+              await page.selectOption('#character',id);
+              const download=page.waitForEvent('download',{timeout:120000});
+              await page.locator('#download').click();
+              const f=await download;await f.saveAs(path.join(output,id+'-animated.glb'));
+              const b=fs.readFileSync(path.join(output,id+'-animated.glb'));
+              if(b.subarray(0,4).toString()!=='glTF'||b.length<10000)throw new Error(id+' invalid GLB header or size');
+              const jlen=b.readUInt32LE(12);
+              if(b.subarray(16,20).toString()!=='JSON')throw new Error(id+' invalid JSON chunk');
+              const d=JSON.parse(b.subarray(20,20+jlen).toString('utf8'));
+              const count=d.meshes?.length||0;
+              const clips=d.animations?.length||0;
+              if(count<20||clips<3)throw new Error(id+' missing distinct meshes or animation clips: '+count+'/'+clips);
+              console.log('PASS',id,'bytes',b.length,'meshes',count,'animation clips',clips);
+            }
+            if(errs.length)throw new Error('Browser errors: '+errs.join(' | '));
+            await page.setViewportSize({width:1920,height:1080});await page.waitForTimeout(400);
+            await page.screenshot({path:'emotional-support-brick-3d/assets/premium/studio-1080p.png'});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/export-cast.cjs
+      - name: Upload ten animated models and screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ten-premium-animated-glbs-and-preview
+          path: emotional-support-brick-3d/assets/premium/
+          if-no-files-found: warn
+      - name: Commit successful exports to staging branch
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add emotional-support-brick-3d/assets/premium/
+          git diff --cached --quiet || (git commit -m "Publish ten exported premium animated GLBs" && git pull --rebase && git push)

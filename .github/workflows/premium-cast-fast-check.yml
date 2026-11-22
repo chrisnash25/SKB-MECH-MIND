@@ -1,0 +1,50 @@
+name: Premium cast rapid in-game QA
+on:
+  push:
+    branches: [premium-ten-character-game-integration]
+    paths:
+      - 'emotional-support-brick-3d/**'
+      - '.github/workflows/premium-cast-fast-check.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Fast in-game character smoke
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/game-http.log 2>&1 &
+          cat > /tmp/premium-check.cjs <<'NODE'
+          const {chromium}=require(process.cwd()+'/node_modules/playwright');
+          const fs=require('fs');
+          (async()=>{
+            const b=await chromium.launch({headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+            const page=await b.newPage({viewport:{width:1920,height:1080}});
+            const errors=[];page.on('pageerror',e=>errors.push(e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            await page.goto('http://127.0.0.1:8765/emotional-support-brick-3d/?premium-test=1',{waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>window.__premiumCastActive===true && document.querySelectorAll('[data-brick-id]').length===10,{timeout:60000});
+            const ids=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'];
+            for(const id of ids){await page.evaluate(id=>document.querySelector('[data-brick-id="'+id+'"]').click(),id);await page.waitForTimeout(80)}
+            await page.evaluate(()=>document.querySelector('[data-brick-id="bricko"]').click());
+            await page.waitForTimeout(1300);
+            const status=await page.evaluate(()=>({cast:window.__premiumCastIds,frames:window.__brickFrames,draws:window.__brickDrawCalls,canvas:[document.querySelector('#world').width,document.querySelector('#world').height],premium:window.__premiumCastActive}));
+            await page.screenshot({path:'premium-game-1920x1080.png'});
+            console.log('PREMIUM GAME QA',JSON.stringify(status), 'errors:',JSON.stringify(errors));
+            if(errors.length||!status.premium||status.cast?.length!==10||status.frames<3||status.draws<20||status.canvas[0]<1920||status.canvas[1]<1080)throw new Error('Premium game rendering failed');
+            await b.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/premium-check.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: premium-game-fullhd-smoke
+          path: premium-game-1920x1080.png
