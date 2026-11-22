@@ -45,6 +45,13 @@ jobs:
           return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0,models:window.__brickModelStatus||{},cast:[...document.querySelectorAll('[data-brick-id]')].map(b=>b.dataset.brickId)};
           });
           console.log('INITIAL RENDER:',JSON.stringify({state,errors}));
+          const expectedModels=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'];
+          const modelFiles=await Promise.all(expectedModels.map(async id=>{
+            const res=await page.request.get('http://127.0.0.1:8765/emotional-support-brick-3d/assets/cast/'+id+'.glb');
+            const bytes=await res.body();
+            return {id,status:res.status(),size:bytes.length,magic:bytes.subarray(0,4).toString('ascii')};
+          }));
+          console.log('RIGGED MODEL FILES:',JSON.stringify(modelFiles));
           async function saveCanvas(filename){
           const data=await page.evaluate(()=>document.getElementById('world').toDataURL('image/png'));
           if(!data.startsWith('data:image/png;base64,'))throw new Error('Canvas did not return PNG');
@@ -86,7 +93,7 @@ jobs:
           const size=await page.evaluate(()=>({width:document.getElementById('world').width,height:document.getElementById('world').height,frames:window.__brickFrames||0}));
           console.log('1080p CHECK:',JSON.stringify(size));
           await browser.close();
-          if(Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
+          if(modelFiles.some(m=>m.status!==200||m.size<5000||m.magic!=='glTF')||Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
