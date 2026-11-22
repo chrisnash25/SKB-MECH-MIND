@@ -1,0 +1,37 @@
+name: Bricko staged reference model
+on:
+  push:
+    branches: [bricko-reference-model-v1]
+    paths:
+      - 'tools/build_bricko_reference.py'
+      - '.github/workflows/bricko-staging.yml'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender
+      - name: Generate Bricko only
+        run: blender -b -noaudio --python tools/build_bricko_reference.py
+      - name: Validate GLB and rig
+        run: |
+          python3 - <<'PY'
+          import os,json,struct
+          p='emotional-support-brick-3d/staging/bricko/bricko.glb'
+          b=open(p,'rb').read()
+          assert b[:4]==b'glTF' and len(b)>10000
+          n=struct.unpack_from('<I',b,12)[0]
+          assert b[16:20]==b'JSON'
+          d=json.loads(b[20:20+n])
+          assert len(d.get('meshes',[]))>=20
+          assert d.get('skins'), 'No skeleton exported'
+          assert len(d.get('animations',[]))>=3, 'Missing animation clips'
+          print('Bricko staged GLB valid',len(b),'bytes',len(d['meshes']),'meshes',len(d['animations']),'animations')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bricko-staging-glb
+          path: emotional-support-brick-3d/staging/bricko/bricko.glb
