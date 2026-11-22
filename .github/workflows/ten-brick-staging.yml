@@ -1,0 +1,51 @@
+name: Stage and validate all ten 3D brick models
+on:
+  push:
+    branches: [ten-brick-cast-staging-v1]
+    paths: ['tools/build_brick_cast.py', '.github/workflows/ten-brick-staging.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
+      - name: Syntax-check generation script
+        run: python3 -m py_compile tools/build_brick_cast.py
+      - name: Build all ten in staging
+        shell: bash
+        run: |
+          set -o pipefail
+          blender --version | head -n 3
+          blender -b -noaudio --python-exit-code 1 --python tools/build_brick_cast.py 2>&1 | tee brick-build.log
+      - name: Verify model geometry skeleton and animation
+        run: |
+          python3 - <<'PY'
+          import json,struct,pathlib
+          root=pathlib.Path('emotional-support-brick-3d/staging/cast')
+          names=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo']
+          assert sorted(p.stem for p in root.glob('*.glb'))==sorted(names)
+          for name in names:
+              b=(root/(name+'.glb')).read_bytes()
+              assert b[:4]==b'glTF' and len(b)>5000,(name,len(b))
+              size=struct.unpack_from('<I',b,12)[0]
+              assert b[16:20]==b'JSON'
+              doc=json.loads(b[20:20+size])
+              assert len(doc.get('meshes',[]))>=20,name
+              assert doc.get('skins'),name
+              assert len(doc.get('animations',[]))>=3,name
+              print(name,'PASS',len(doc['meshes']),'meshes',len(doc['animations']),'clips')
+          PY
+      - name: Preserve build log even when model generation fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ten-brick-build-diagnostics
+          path: brick-build.log
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ten-brick-staged-rigged-glbs
+          path: emotional-support-brick-3d/staging/cast/*.glb
