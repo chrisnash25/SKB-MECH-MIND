@@ -179,7 +179,8 @@ function applyCastModel(character){
  character.rig={leftArm:model.getObjectByName('leftArm'),rightArm:model.getObjectByName('rightArm'),leftLeg:model.getObjectByName('leftLeg'),rightLeg:model.getObjectByName('rightLeg'),body:model.getObjectByName('body')};
  // Facial overlay is attached only if the authored model lacks face animation.
 }
-for(const cast of BRICK_CAST){
+// Loading the old low-detail GLBs is deliberately disabled in premium mode.
+if(!window.__premiumCastActive)for(const cast of BRICK_CAST){
  loader.load('./assets/cast/'+cast.id+'.glb',gltf=>{
   castAssets.set(cast.id,gltf.scene);
   window.__brickModelStatus=window.__brickModelStatus||{};
