@@ -156,7 +156,9 @@ function applyCastModel(character){
  const asset=castAssets.get(character.id);if(!asset)return;
  if(character.model3d)character.root.remove(character.model3d);
  const model=cloneSkinnedModel(asset);
- model.rotation.y=Math.PI; // Keep the character facing the camera.
+ // The Blender frontal -Y face becomes +Z in Three.js and faces the camera.
+ // Rotating the entire model PI here made the player see the character's back.
+ model.rotation.y=0;
  const bounds=new T.Box3().setFromObject(model);
  const size=bounds.getSize(new T.Vector3());
  const pivot=new T.Group();pivot.scale.setScalar(1.95/Math.max(size.y,.01));
