@@ -4,11 +4,15 @@ on:
     paths:
       - 'emotional-support-brick-3d/**'
       - '.github/workflows/brick-3d-check.yml'
+  pull_request:
+    paths:
+      - 'emotional-support-brick-3d/**'
+      - '.github/workflows/brick-3d-check.yml'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: brick-3d-visual-check
+  group: brick-3d-visual-check-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   browser:
@@ -42,7 +46,7 @@ jobs:
           await page.waitForTimeout(6500);
           const state=await page.evaluate(()=>{
           const c=document.querySelector('#world');
-          return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0,models:window.__brickModelStatus||{},cast:[...document.querySelectorAll('[data-brick-id]')].map(b=>b.dataset.brickId)};
+          return {loaded:!document.querySelector('#load'),webgl:!!c.getContext('webgl2'),width:c.width,height:c.height,frames:window.__brickFrames||0,calls:window.__brickDrawCalls||0,models:window.__brickModelStatus||{},premium:window.__premiumCastActive===true,premiumIds:window.__premiumCastIds||[],cast:[...document.querySelectorAll('[data-brick-id]')].map(b=>b.dataset.brickId)};
           });
           console.log('INITIAL RENDER:',JSON.stringify({state,errors}));
           const expectedModels=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'];
@@ -100,7 +104,7 @@ jobs:
           console.log('1080p CHECK:',JSON.stringify(size));
           const fullHD=await saveCanvas('brick-1080p.png');
           await browser.close();
-          if(modelFiles.some(m=>m.status!==200||m.size<5000||m.magic!=='glTF')||Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080||fullHD<30000)process.exit(1);
+          if(modelFiles.some(m=>m.status!==200||m.size<5000||m.magic!=='glTF')||Object.entries({feed:'feed',sleep:'sleep',dance:'dance',jenga:'jenga',stack:'stack',memory:'memory'}).some(([k,v])=>features[k]!==v)||voiceFiles.some(x=>x.status!==200||x.bytes<1000)||errors.length||!state.premium||state.premiumIds.length!==10||!state.loaded||!state.webgl||state.frames<2||!state.cast||state.cast.length!==10||new Set(state.cast).size!==10||state.calls<5||first<10000||second<10000||size.width<1920||size.height<1080||fullHD<30000)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/brick-test.cjs
