@@ -216,11 +216,30 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().the
 </script>
 <script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":47106104,"index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":46066745,"index.wasm":9575393},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
 function launchGodotEngine() {
+  // Detect unsupported/disabled WebGL 2 before downloading the engine.
+  // A device without a working WebGL 2 context cannot run this Godot 4 3D export.
+  try {
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl2', {powerPreference:'low-power', failIfMajorPerformanceCaveat:false});
+    if (!gl) {
+      const msg = 'WebGL 2 is unavailable in this browser or graphics driver. The 3D game cannot start here. Try the latest Chrome or Edge with hardware acceleration enabled, or another device that supports WebGL 2. This is a graphics compatibility failure, not a problem with your controls.';
+      document.getElementById('status').style.visibility='visible';
+      document.getElementById('status-notice').textContent=msg;
+      document.getElementById('status-notice').style.display='block';
+      document.getElementById('dz-launch').disabled=false;
+      document.getElementById('dz-launch').textContent='RETRY';
+      document.getElementById('dz-music-overlay').classList.remove('dz-hidden');
+      return;
+    }
+    const lose = gl.getExtension('WEBGL_lose_context');
+    if (lose) lose.loseContext();
+  } catch (e) { console.warn('WebGL compatibility probe failed',e); }
+
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const loadingCaption = document.getElementById('dz-loading-caption');
@@ -359,7 +378,7 @@ function launchGodotEngine() {
     if (enabled) play(); // Click unlocks the Web Audio playback restriction.
     screen.classList.add("dz-hidden");
     toolbar.hidden = false;
-    launchGodotEngine(); // Start the existing, unmodified Godot game download here.
+    launchGodotEngine(); // Start Godot after a WebGL 2 compatibility check.
   });
   document.getElementById("dz-music-menu").addEventListener("click", () => {
     settings.hidden=!settings.hidden;
