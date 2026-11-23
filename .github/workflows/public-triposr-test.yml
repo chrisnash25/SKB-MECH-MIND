@@ -1,0 +1,41 @@
+name: Public TripoSR no-login 3D mesh test
+on:
+  push:
+    branches: [isolated-reference-3d-reconstruction-v2]
+    paths:
+      - 'tools/probe_triposr_public.py'
+      - 'tools/render_triposr_real.py'
+      - '.github/workflows/public-triposr-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      SOURCE_URL: https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/fdace9b9-8994-4529-8021-c6e7bb2985aa.jpg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'gradio_client>=1.4,<3' pillow requests numpy opencv-python-headless
+      - name: Generate genuine model
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/probe_triposr_public.py 2>&1 | tee triposr-test.log
+      - name: Install free Blender for actual model render
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
+      - name: Render real model at 1080p
+        run: blender -b -noaudio --python-exit-code 1 --python tools/render_triposr_real.py
+      - name: Preserve genuine geometry and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-public-triposr-bricko
+          path: |
+            triposr-test.log
+            emotional-support-brick-3d/staging/triposr/
+          if-no-files-found: warn

@@ -1,0 +1,49 @@
+name: Public no-login actual 3D character test
+on:
+  push:
+    branches: [free-no-login-3d-probe]
+    paths:
+      - 'tools/try_sf3d_public.py'
+      - '.github/workflows/public-sf3d-try.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_URL: https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/fdace9b9-8994-4529-8021-c6e7bb2985aa.jpg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install public Gradio client and image tools
+        run: pip install 'gradio_client>=1.4,<3' pillow requests
+      - name: Attempt genuine GLB on free public Space
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/try_sf3d_public.py 2>&1 | tee public-3d.log
+      - name: Render actual returned GLB from camera
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender
+          blender -b -noaudio --python-exit-code 1 --python tools/preview_real_glb.py
+      - name: Preserve actual GLB and preview evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-real-3d-bricko-public-demo
+          path: |
+            public-3d.log
+            emotional-support-brick-3d/staging/real-3d/*
+          if-no-files-found: warn
+      - name: Publish generated preview only if successful
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add emotional-support-brick-3d/staging/real-3d/
+          git diff --cached --quiet || (git commit -m "Add genuine public-SF3D generated Bricko model and render" && git pull --rebase && git push)
