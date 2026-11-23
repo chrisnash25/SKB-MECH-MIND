@@ -32,7 +32,7 @@ try:
   im=photo.crop(boxes[name])
   im.save(root/(name+'-reference.png'))
  print('Prepared ten character reference image crops',flush=True)
- c=Client('microsoft/TRELLIS.2',verbose=False)
+ c=Client('microsoft/TRELLIS.2',token=os.getenv('HF_TOKEN') or None,verbose=False)
  endpoints=[dep.get('api_name') for dep in c.config.get('dependencies',[]) if dep.get('api_name')]
  print('Public Gradio endpoints:',endpoints,flush=True)
  if 'image_to_3d' not in endpoints or 'extract_glb' not in endpoints:
