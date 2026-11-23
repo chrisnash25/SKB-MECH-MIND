@@ -1,7 +1,7 @@
 name: Public TripoSR no-login 3D mesh test
 on:
   push:
-    branches: [free-no-login-3d-probe]
+    branches: [isolated-reference-3d-reconstruction-v2]
     paths:
       - 'tools/probe_triposr_public.py'
       - '.github/workflows/public-triposr-test.yml'
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install 'gradio_client>=1.4,<3' pillow requests
+      - run: pip install 'gradio_client>=1.4,<3' pillow requests numpy opencv-python-headless
       - name: Generate genuine model
         shell: bash
         run: |
