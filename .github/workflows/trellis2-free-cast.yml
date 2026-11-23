@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 30
     env:
       CHARACTER: ${{ inputs.character || 'bricko' }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
       SOURCE_URL: https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/fdace9b9-8994-4529-8021-c6e7bb2985aa.jpg
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +33,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          if [ -z "$HF_TOKEN" ]; then
+            echo 'BLOCKED: Add a free Hugging Face read token as GitHub Actions secret HF_TOKEN; anonymous ZeroGPU quota is exhausted' | tee trellis2-attempt.log
+            exit 1
+          fi
           python tools/trellis2_free_cast.py 2>&1 | tee trellis2-attempt.log
       - name: Preserve references and diagnostics even on free-GPU failure
         if: always()
