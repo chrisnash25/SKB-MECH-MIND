@@ -34,7 +34,7 @@ jobs:
           set -o pipefail
           python tools/produce_reference_png_3d.py 2>&1 | tee model.log
       - name: Install Blender
-        run: sudo apt-get update -qq && sudo apt-get install -y blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
       - name: Rig and animate the real mesh
         run: |
           blender -b -noaudio --python-exit-code 1 --python tools/rig_trellis_cast.py -- \
