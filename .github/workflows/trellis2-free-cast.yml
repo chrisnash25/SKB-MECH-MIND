@@ -1,0 +1,46 @@
+name: Free TRELLIS2 real 3D reconstruction smoke test
+on:
+  push:
+    branches: [trellis2-free-character-reconstruction]
+    paths:
+      - 'tools/trellis2_free_cast.py'
+      - '.github/workflows/trellis2-free-cast.yml'
+  workflow_dispatch:
+    inputs:
+      character:
+        description: Single character for one free GPU attempt
+        type: choice
+        options: [bricko, rusty, pulse, calm, spark, blocky, cozy, zapp, echo, gizmo]
+        default: bricko
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CHARACTER: ${{ inputs.character || 'bricko' }}
+      SOURCE_URL: https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/fdace9b9-8994-4529-8021-c6e7bb2985aa.jpg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only free Gradio client and image tools
+        run: pip install --disable-pip-version-check 'gradio_client>=1.4,<3' Pillow requests
+      - name: Generate real GLB on Microsoft public ZeroGPU if quota permits
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/trellis2_free_cast.py 2>&1 | tee trellis2-attempt.log
+      - name: Preserve references and diagnostics even on free-GPU failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trellis2-reference-crops-and-build-log
+          path: |
+            trellis2-attempt.log
+            emotional-support-brick-3d/staging/trellis2/*-reference.png
+            emotional-support-brick-3d/staging/trellis2/*.glb
+            emotional-support-brick-3d/staging/trellis2/*-verified.json
+          if-no-files-found: warn
