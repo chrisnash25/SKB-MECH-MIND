@@ -1,1 +1,1 @@
-DROPZONE Tesco Extra front sign, 20 November 2026. Large red serif TESCO, five blue slashes, blue italic extra on outside-facing wave canopy. Retail master shops, McDonalds, Xbox controller, original Yate splash and soundtrack preserved. Source sha256 e39eddfdc4d20acd8e5e270c64596977e54bece1c1ced782cc8fe4f5349868a6.\n
+Option C semi-realistic Tesco graphics overhaul. Original music, splash and 73 shop placements retained; v2 typed Godot script fixes.
