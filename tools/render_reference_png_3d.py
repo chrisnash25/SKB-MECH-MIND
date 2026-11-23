@@ -21,6 +21,9 @@ for offset,power,size in [((-2,-3,4),900,3),((2,1,3),600,3)]:
  bpy.ops.object.light_add(type='AREA',location=mid+Vector(offset)*extent)
  o=bpy.context.object;o.data.energy=power;o.data.size=size*extent;point(o,mid)
 scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.samples=16;scene.cycles.use_denoising=False
+# Ubuntu's packaged Blender can lack OpenImageDenoiser; disable view-layer denoising too.
+for layer in scene.view_layers:
+ layer.cycles.use_denoising=False
 scene.render.resolution_x=1080;scene.render.resolution_y=1080;scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG'
 scene.render.filepath=os.path.abspath(base+name+'-actual-3d-render.png')
