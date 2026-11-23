@@ -1,0 +1,108 @@
+name: DROPZONE Option C — Complete graphics overhaul
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/dropzone-option-c-overhaul.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  graphics-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover verified source package
+        env:
+          FILE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-d258-8210-8166-2a8efb551c16/raw?se=2026-11-23T05%3A57%3A24Z&sp=r&sv=2026-06-06&sr=b&scid=19c608dd-0b57-5988-9b62-c417e7ae50d4&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-22T07%3A06%3A42Z&ske=2026-11-23T07%3A06%3A42Z&sks=b&skv=2026-06-06&sig=gCEH74r2O9DynHuHqJOCuAU4o04Z4t6Ipg74LCnatzk%3D'
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 3 "$FILE_URL" -o /tmp/source.zip
+          echo 'd14c1a7b5499b907fd4cf89e9476b68ec37f3fb3394516b0add4ac242659ac62  /tmp/source.zip' | sha256sum -c -
+          mkdir -p /tmp/game /tmp/web
+          unzip -q /tmp/source.zip -d /tmp/game
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          g=Path('/tmp/game')
+          assert len(json.loads((g/'world/streets.json').read_text())['shops'])==73
+          assert (g/'scripts/option_c_tesco.gd').is_file()
+          assert (g/'assets/signage/tesco_wordmark.png').is_file()
+          print('Verified graphics source and original 73 shops')
+          PY
+      - name: Install Godot Web exporter
+        run: |
+          set -e
+          wget -q https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -O /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          sudo install /tmp/Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+          wget -q https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz -O /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable" /tmp/templatesdir
+          unzip -q /tmp/templates.tpz -d /tmp/templatesdir
+          cp -a /tmp/templatesdir/templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+      - name: Import and run source and input checks
+        run: |
+          set -euo pipefail
+          timeout 300s godot --headless --path /tmp/game --editor --import 2>&1 | tee /tmp/import.log
+          for test in option_c_baseline option_c_smoke retail_smoke gamepad_smoke; do
+            timeout 120s godot --headless --path /tmp/game --script "res://tests/$test.gd" 2>&1 | tee "/tmp/$test.log"
+          done
+          grep -q 'OPTION_C_BEFORE_SMOKE_PASS' /tmp/option_c_baseline.log
+          grep -q 'OPTION_C_TESCO_SMOKE_PASS' /tmp/option_c_smoke.log
+          grep -q 'RETAIL_MASTER_SMOKE_PASS' /tmp/retail_smoke.log
+          grep -q 'GAMEPAD_SMOKE_PASS' /tmp/gamepad_smoke.log
+          timeout 100s godot --headless --path /tmp/game --quit-after 35 2>&1 | tee /tmp/runtime.log
+          ! grep -E 'SCRIPT ERROR|Parse Error|Failed to load script' /tmp/runtime.log
+      - name: Build browser game from updated 3D assets
+        run: |
+          set -euo pipefail
+          cat > /tmp/game/export_presets.cfg <<'EOF'
+          [preset.0]
+          name="Web"
+          platform="Web"
+          runnable=true
+          advanced_options=false
+          dedicated_server=false
+          custom_features=""
+          export_filter="all_resources"
+          export_path="../web/index.html"
+          [preset.0.options]
+          variant/extensions_support=false
+          variant/thread_support=false
+          html/export_icon=true
+          html/canvas_resize_policy=2
+          html/focus_canvas_on_start=true
+          progressive_web_app/enabled=false
+          EOF
+          godot --headless --path /tmp/game --export-release Web /tmp/web/index.html
+          for f in index.html index.js index.wasm index.pck; do test -s "/tmp/web/$f"; done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          old=Path('dropzone/index.html').read_text()
+          new=Path('/tmp/web/index.html').read_text()
+          cfg=re.search(r'const GODOT_CONFIG = \{[^\n]+\};',new)
+          assert cfg
+          fixed,n=re.subn(r'const GODOT_CONFIG = \{[^\n]+\};',lambda _:cfg.group(0),old,count=1)
+          assert n==1 and 'Yate-Free-Roam.mp3' in fixed and 'yate_splash.jpg' in fixed
+          Path('/tmp/web/index.html').write_text(fixed)
+          PY
+      - name: Save previous working version and publish overhaul
+        run: |
+          set -euo pipefail
+          mkdir -p dropzone-before-option-c
+          cp dropzone/index.{html,js,wasm,pck} dropzone-before-option-c/
+          cp -a /tmp/web/. dropzone/
+          printf 'Option C semi-realistic Tesco graphics overhaul. Original music, splash and 73 shop placements retained.\n' > dropzone/BUILD_INFO.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dropzone dropzone-before-option-c
+          git commit -m "Ship DROPZONE Option C Tesco graphics overhaul with rollback"
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dropzone-option-c-build-logs
+          path: /tmp/*.log
+          if-no-files-found: ignore
