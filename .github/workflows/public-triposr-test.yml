@@ -27,7 +27,7 @@ jobs:
           set -o pipefail
           python tools/probe_triposr_public.py 2>&1 | tee triposr-test.log
       - name: Install free Blender for actual model render
-        run: sudo apt-get update -qq && sudo apt-get install -y blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
       - name: Render real model at 1080p
         run: blender -b -noaudio --python-exit-code 1 --python tools/render_triposr_real.py
       - name: Preserve genuine geometry and logs
