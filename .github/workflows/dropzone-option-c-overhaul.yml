@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Recover verified source package
         env:
-          FILE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-d258-8210-8166-2a8efb551c16/raw?se=2026-11-23T05%3A57%3A24Z&sp=r&sv=2026-06-06&sr=b&scid=19c608dd-0b57-5988-9b62-c417e7ae50d4&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-22T07%3A06%3A42Z&ske=2026-11-23T07%3A06%3A42Z&sks=b&skv=2026-06-06&sig=gCEH74r2O9DynHuHqJOCuAU4o04Z4t6Ipg74LCnatzk%3D'
+          FILE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-a590-8210-9250-05c9c4e55d79/raw?se=2026-11-23T05%3A59%3A39Z&sp=r&sv=2026-06-06&sr=b&scid=72b4f9ea-75af-5ddb-80ed-8a527b38fa95&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-23T03%3A06%3A55Z&ske=2026-11-24T03%3A06%3A55Z&sks=b&skv=2026-06-06&sig=LgAmlOTUn38877AHhL5nUV9LPQe8Hv1zkaT7VwlwCQ4%3D'
         run: |
           set -euo pipefail
           curl -fLsS --retry 3 "$FILE_URL" -o /tmp/source.zip
-          echo 'd14c1a7b5499b907fd4cf89e9476b68ec37f3fb3394516b0add4ac242659ac62  /tmp/source.zip' | sha256sum -c -
+          echo '301525e6b02c8051eb413ede843f7b5167740304048c05a7927ed68b8f706c2d  /tmp/source.zip' | sha256sum -c -
           mkdir -p /tmp/game /tmp/web
           unzip -q /tmp/source.zip -d /tmp/game
           python3 - <<'PY'
@@ -93,7 +93,7 @@ jobs:
           mkdir -p dropzone-before-option-c
           cp dropzone/index.{html,js,wasm,pck} dropzone-before-option-c/
           cp -a /tmp/web/. dropzone/
-          printf 'Option C semi-realistic Tesco graphics overhaul. Original music, splash and 73 shop placements retained.\n' > dropzone/BUILD_INFO.txt
+          printf 'Option C semi-realistic Tesco graphics overhaul. Original music, splash and 73 shop placements retained; v2 typed Godot script fixes.\n' > dropzone/BUILD_INFO.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add dropzone dropzone-before-option-c
