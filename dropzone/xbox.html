@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>DROPZONE Xbox One — safe startup</title>
+<style>
+html,body{margin:0;background:#050a13;color:#f3f5fb;font:17px Arial,sans-serif;width:100%;height:100%;overflow:hidden}
+#canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;outline:0}
+#panel{position:fixed;left:2vw;top:2vh;z-index:10;background:rgba(4,10,22,.95);border:1px solid #7e96c2;border-radius:10px;box-sizing:border-box;padding:15px;max-width:min(96vw,640px);max-height:94vh;overflow:auto}
+h1{font-size:21px;margin:0 0 8px}p{line-height:1.4;margin:6px 0 12px}
+button{font:inherit;background:#e4c65b;border:0;border-radius:7px;padding:10px 13px;color:#13151a;font-weight:bold;margin:5px 6px 5px 0;cursor:pointer}
+button:disabled{opacity:.5}
+pre{font:13px/1.35 Consolas,monospace;background:#141d30;border:1px solid #303d57;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto}
+#progress{width:100%;height:13px}a{color:#9dcaff}small{color:#b5bfd2}
+</style></head>
+<body><canvas id="canvas" width="640" height="360" tabindex="0"></canvas>
+<section id="panel"><h1>DROPZONE — Xbox One safe launch</h1>
+<p>This test starts the <strong>real game</strong> at a smaller canvas size, without preloading music or splash art. It logs the exact engine failure if the game cannot start. The normal game is unchanged.</p>
+<button id="start">START XBOX TEST</button><button id="copy">COPY ERROR REPORT</button><a href="./">Normal game</a>
+<progress id="progress" hidden></progress><pre id="log">Ready. Press START XBOX TEST.</pre>
+<small>Only you can see these diagnostics. Nothing is sent to a server.</small>
+</section>
+<script>
+(function(){
+const logEl=document.getElementById('log'),panel=document.getElementById('panel'),start=document.getElementById('start'),bar=document.getElementById('progress');
+const logLines=[];let gameStarted=false;
+const stamp=()=>new Date().toISOString().slice(11,19);
+function log(text){const line=stamp()+' '+String(text);logLines.push(line);if(logLines.length>65)logLines.shift();logEl.textContent=logLines.join('\n');logEl.scrollTop=logEl.scrollHeight;}
+function errorText(e){return (e&&e.stack)||(e&&e.message)||String(e);}
+window.addEventListener('error',e=>log('JS ERROR: '+errorText(e.error||e.message)));
+window.addEventListener('unhandledrejection',e=>log('PROMISE ERROR: '+errorText(e.reason)));
+document.getElementById('canvas').addEventListener('webglcontextlost',e=>{e.preventDefault();panel.hidden=false;log('WEBGL CONTEXT LOST: Xbox graphics driver reset or memory pressure');});
+document.getElementById('canvas').addEventListener('webglcontextrestored',()=>log('WEBGL CONTEXT RESTORED'));
+document.getElementById('copy').onclick=()=>{const data=logLines.join('\n');if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(data).then(()=>log('Report copied')).catch(()=>log('Copy blocked: select text above'));}else{log('Select the text above to copy');}};
+start.onclick=async()=>{
+start.disabled=true;bar.hidden=false;
+log('Browser: '+navigator.userAgent);
+log('Memory hint: '+(navigator.deviceMemory||'?')+'GB; screen '+screen.width+'x'+screen.height+' DPR '+devicePixelRatio);
+log('Cross-origin isolated: '+window.crossOriginIsolated);
+if(typeof Engine==='undefined'){log('FATAL: index.js failed to load');start.disabled=false;return;}
+const missing=Engine.getMissingFeatures({threads:false});
+log('Godot missing features: '+(missing.length?missing.join('; '):'none'));
+if(missing.length){log('STOP: Godot preflight failed even though a standalone WebGL check may pass.');start.disabled=false;return;}
+try{
+const cfg={args:[],canvas:document.getElementById('canvas'),canvasResizePolicy:0,emscriptenPoolSize:8,ensureCrossOriginIsolationHeaders:false,executable:'index',experimentalVK:false,fileSizes:{'index.pck':47106104,'index.wasm':37700666},focusCanvas:true,gdextensionLibs:[],godotPoolSize:4};
+const engine=new Engine(cfg);
+log('Starting Godot WebGL2 Compatibility; canvas 640x360; no MP3 preload');
+let last=0;
+const watchdog=setTimeout(()=>{if(!gameStarted){panel.hidden=false;log('STARTUP STALLED after 120s — possible Xbox memory/driver limit or asset-loading failure');}},120000);
+await engine.startGame({onProgress:(current,total)=>{if(total>0){bar.value=current;bar.max=total;const p=Math.floor(100*current/total);if(p>=last+10){last=p;log('Loading: '+p+'%');}}}});
+clearTimeout(watchdog);
+gameStarted=true;
+log('GODOT STARTED SUCCESSFULLY — gameplay should be visible');
+bar.hidden=true;panel.hidden=true;
+}catch(e){bar.hidden=true;log('GODOT START FAILED: '+errorText(e));panel.hidden=false;start.disabled=false;}
+};
+})();
+</script>
+<script src="index.js"></script>
+</body></html>
