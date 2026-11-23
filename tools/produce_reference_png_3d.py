@@ -5,7 +5,7 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 from gradio_client import Client,handle_file
-import os,sys,requests,json,struct,shutil
+import os,sys,requests,json,struct,shutil,time
 URLS={
   'bricko': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/2bb45103-402a-4239-bd11-c57267b6137a.png",
   'rusty': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/9d44fafa-d5eb-44f9-8a4d-3f92d3af16f3.png",
@@ -37,9 +37,21 @@ canvas.alpha_composite(im,((800-im.width)//2,(800-im.height)//2))
 input_path=out/(name+"-model-input.png")
 canvas.convert('RGB').save(input_path)
 print("MODEL_INPUT",name,original.size,bbox,flush=True)
-client=Client("AleenDG/3DGenTripoSR",verbose=False)
-print("REQUESTING_REAL_MESH",name,flush=True)
-result=client.predict(handle_file(str(input_path)),api_name="/generate")
+for attempt in range(1,4):
+ try:
+  client=Client("AleenDG/3DGenTripoSR",verbose=False)
+  print("REQUESTING_REAL_MESH",name,"attempt",attempt,flush=True)
+  result=client.predict(handle_file(str(input_path)),api_name="/generate")
+  break
+ except (requests.RequestException, TimeoutError, ConnectionError) as e:
+  if attempt==3:raise
+  print("TRANSIENT_ERROR",name,str(e)[:250],"retry",attempt,flush=True)
+  time.sleep(10*attempt)
+ except Exception as e:
+  if "timeout" not in str(e).lower() and "temporar" not in str(e).lower():raise
+  if attempt==3:raise
+  print("TRANSIENT_SERVICE_TIMEOUT",name,str(e)[:250],flush=True)
+  time.sleep(10*attempt)
 paths=[v for v in result if isinstance(v,str) and v.lower().endswith(('.glb','.obj'))]
 glbs=[p for p in paths if p.lower().endswith('.glb')]
 if not glbs:raise RuntimeError("3D generator did not return GLB "+repr(result)[:500])
