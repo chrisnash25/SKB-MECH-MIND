@@ -48,7 +48,7 @@ for attempt in range(1,4):
   print("TRANSIENT_ERROR",name,str(e)[:250],"retry",attempt,flush=True)
   time.sleep(10*attempt)
  except Exception as e:
-  if "timeout" not in str(e).lower() and "temporar" not in str(e).lower():raise
+  if not any(t in str(e).lower() for t in ("timeout","temporar","incomplete chunked read","peer closed connection","remoteprotocolerror","connection reset")):raise
   if attempt==3:raise
   print("TRANSIENT_SERVICE_TIMEOUT",name,str(e)[:250],flush=True)
   time.sleep(10*attempt)
