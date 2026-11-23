@@ -38,6 +38,24 @@ jobs:
             exit 1
           fi
           python tools/trellis2_free_cast.py 2>&1 | tee trellis2-attempt.log
+      - name: Install free Blender for actual mesh rigging
+        run: sudo apt-get update -qq && sudo apt-get install -y blender
+      - name: Rig and animate the real generated model
+        run: |
+          blender -b -noaudio --python-exit-code 1 --python tools/rig_trellis_cast.py -- \
+            "emotional-support-brick-3d/staging/trellis2/$CHARACTER.glb" \
+            "emotional-support-brick-3d/staging/trellis2/$CHARACTER-animated.glb"
+      - name: Verify the animated GLB has a real skin and four clips
+        run: |
+          python3 - <<'PY'
+          import json,struct,os
+          p='emotional-support-brick-3d/staging/trellis2/'+os.environ['CHARACTER']+'-animated.glb'
+          b=open(p,'rb').read();assert b[:4]==b'glTF' and len(b)>20000
+          n=struct.unpack_from('<I',b,12)[0]
+          d=json.loads(b[20:20+n])
+          assert d.get('skins') and len(d.get('animations',[]))>=4,(d.get('skins'),d.get('animations'))
+          print('REAL textured model rigged with',len(d['animations']),'animation clips')
+          PY
       - name: Preserve references and diagnostics even on free-GPU failure
         if: always()
         uses: actions/upload-artifact@v4
