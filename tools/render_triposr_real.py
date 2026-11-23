@@ -20,7 +20,7 @@ for delta,power,span in [((-1.6,2.5,1.8),900,3.5),((2,2,-1.5),750,3.5)]:
  bpy.ops.object.light_add(type='AREA',location=mid+Vector(delta)*extent)
  o=bpy.context.object;o.data.energy=power;o.data.size=span*extent;aim(o,mid)
 scene=bpy.context.scene
-scene.render.engine='CYCLES';scene.cycles.samples=24
+scene.render.engine='CYCLES';scene.cycles.samples=12;scene.view_layers[0].cycles.use_denoising=False
 scene.render.resolution_x=1080;scene.render.resolution_y=1080;scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG';scene.render.film_transparent=False
 scene.render.filepath=str(p/'bricko-real-3d-render.png')
