@@ -231,9 +231,9 @@ function launchGodotEngine() {
       document.getElementById('status').style.visibility='visible';
       document.getElementById('status-notice').textContent=msg;
       document.getElementById('status-notice').style.display='block';
-      document.getElementById('dz-launch').disabled=false;
-      document.getElementById('dz-launch').textContent='RETRY';
-      document.getElementById('dz-music-overlay').classList.remove('dz-hidden');
+      document.getElementById('dz-launch').disabled=true;
+      document.getElementById('dz-launch').textContent='WEBGL 2 NOT AVAILABLE';
+      document.getElementById('dz-music-overlay').classList.add('dz-hidden');
       return;
     }
     const lose = gl.getExtension('WEBGL_lose_context');
