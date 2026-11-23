@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DROPZONE WebGL compatibility check</title>
+<style>body{margin:0;background:#0c1424;color:#f4f6fa;font:16px system-ui,Arial;padding:18px}main{max-width:680px;margin:auto}h1{font-size:1.5rem}p{line-height:1.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1a2740;border-radius:10px;padding:16px;line-height:1.5}button,a{display:inline-block;padding:12px 15px;background:#e7c454;color:#14213a;font-weight:bold;border:0;border-radius:8px;text-decoration:none;margin:4px 4px 4px 0}small{color:#bcc9db}canvas{width:1px;height:1px;position:absolute;opacity:0}</style></head>
+<body><main><h1>DROPZONE — graphics compatibility check</h1><p>This page does <strong>not</strong> load the game. It checks whether your browser can create the WebGL 2 graphics context required by Godot 4.</p>
+<button id="run">Run graphics test</button><button id="copy">Copy results</button><a href="./?v=20261123-repair">Back to game</a><pre id="out">Press Run graphics test.</pre><small>No results are uploaded. Share the text only if you want help troubleshooting.</small></main>
+<script>
+const out=document.getElementById('out');
+document.getElementById('run').onclick=()=>{
+const lines=[];
+const add=(k,v)=>lines.push(k+': '+String(v));
+add('Date',new Date().toISOString());
+add('Browser',navigator.userAgent);
+add('Screen',screen.width+' x '+screen.height);
+add('Pixel ratio',devicePixelRatio);
+add('Secure context',window.isSecureContext);
+add('Device memory GB',navigator.deviceMemory??'not exposed');
+add('CPU threads',navigator.hardwareConcurrency??'not exposed');
+const canvas=document.createElement('canvas');
+let gl=null;
+try{gl=canvas.getContext('webgl2',{powerPreference:'default'});add('WebGL 2',gl?'AVAILABLE':'UNAVAILABLE');}catch(e){add('WebGL 2','ERROR '+e.message)}
+if(gl){
+try{add('GL version',gl.getParameter(gl.VERSION));add('GL renderer',gl.getParameter(gl.RENDERER));add('Max texture size',gl.getParameter(gl.MAX_TEXTURE_SIZE));const ext=gl.getExtension('WEBGL_debug_renderer_info');if(ext)add('GPU renderer',gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));add('Context lost',gl.isContextLost());}catch(e){add('GPU details','ERROR '+e.message)}
+}else{
+try{const fallback=canvas.getContext('webgl');add('WebGL 1',fallback?'AVAILABLE':'UNAVAILABLE');}catch(e){add('WebGL 1','ERROR '+e.message)}
+}
+add('Required for this Godot 4 game','WebGL 2');
+add('Result',gl?'WebGL 2 is available; game may fail for another reason.':'WebGL 2 is missing or disabled; this 3D export cannot start on this browser.');
+out.textContent=lines.join('\n');
+};
+document.getElementById('copy').onclick=()=>navigator.clipboard.writeText(out.textContent).then(()=>{document.getElementById('copy').textContent='Copied';}).catch(()=>{document.getElementById('copy').textContent='Select text above to copy';});
+</script></body></html>
