@@ -5,6 +5,7 @@ on:
     paths:
       - 'tools/produce_reference_png_3d.py'
       - 'tools/render_reference_png_3d.py'
+      - 'tools/rig_trellis_cast.py'
       - '.github/workflows/reference-png-ten-3d.yml'
   workflow_dispatch:
 permissions:
