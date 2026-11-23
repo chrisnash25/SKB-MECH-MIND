@@ -13,10 +13,10 @@ mid=(lo+hi)*.5
 extent=max(hi-lo)
 if extent<=0:raise ValueError('3D model has invalid bounds')
 def aim(obj,target):obj.rotation_euler=(target-obj.location).to_track_quat('-Z','Y').to_euler()
-bpy.ops.object.camera_add(location=mid+Vector((extent*.20,-extent*2.8,extent*.10)))
+bpy.ops.object.camera_add(location=mid+Vector((extent*.20,extent*.08,extent*2.8)))
 cam=bpy.context.object;aim(cam,mid);cam.data.type='ORTHO';cam.data.ortho_scale=extent*1.45
 bpy.context.scene.camera=cam
-for delta,power,span in [((-1.6,-1.8,2.5),900,3.5),((2,1.5,2),750,3.5)]:
+for delta,power,span in [((-1.6,2.5,1.8),900,3.5),((2,2,-1.5),750,3.5)]:
  bpy.ops.object.light_add(type='AREA',location=mid+Vector(delta)*extent)
  o=bpy.context.object;o.data.energy=power;o.data.size=span*extent;aim(o,mid)
 scene=bpy.context.scene
