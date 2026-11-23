@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Emotional Support Brick | 3D Model Viewer</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0b1222;color:white;font:16px Arial,sans-serif}
+header{min-height:65px;background:#192437;padding:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+button,select{font:inherit;background:#304462;color:white;border:2px solid #7793ba;border-radius:10px;padding:10px;cursor:pointer}
+select{flex:1;max-width:290px}button:focus,select:focus{outline:3px solid #44d9fa}
+#viewer{height:calc(100vh - 145px);min-height:260px;position:relative;touch-action:none}
+#info{background:#192437;min-height:80px;padding:12px 16px;line-height:1.4}
+#status{font-size:14px;color:#aad9ff}
+footer{font-size:12px;color:#b6c6d6}
+#viewer canvas{display:block}a{color:#99d9ff}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
+</head><body>
+<header>
+<strong>3D Brick Viewer</strong>
+<select id="character" aria-label="Select character"></select>
+<button id="prev">◀ Previous</button>
+<button id="next">Next ▶</button>
+<button id="wire">Wireframe</button>
+<button id="reset">Reset camera</button>
+</header>
+<div id="viewer"></div>
+<div id="info"><div id="status">Loading model viewer…</div><footer>These are real experimental GLB assets from the game repository, not newly generated pictures. Rotate with drag, zoom with wheel/pinch. Xbox: use the browser's cursor and buttons.</footer></div>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const names=['bricko','rusty','pulse','calm','spark','blocky','cozy','zapp','echo','gizmo'];
+const select=document.getElementById('character'),root=document.getElementById('viewer'),status=document.getElementById('status');
+for(const n of names){const e=document.createElement('option');e.value=n;e.textContent=n[0].toUpperCase()+n.slice(1);select.append(e)}
+const scene=new THREE.Scene();scene.background=new THREE.Color('#142035');
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));root.appendChild(renderer.domElement);
+const camera=new THREE.PerspectiveCamera(40,1,.01,1000);camera.position.set(2,1,4);
+const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x5d789e,2.7));
+const key=new THREE.DirectionalLight(0xffffff,2.4);key.position.set(4,6,8);scene.add(key);
+const fill=new THREE.DirectionalLight(0xa3bdfd,1.3);fill.position.set(-5,3,-6);scene.add(fill);
+const grid=new THREE.GridHelper(6,20,0x5e80a4,0x293a51);grid.position.y=-.05;scene.add(grid);
+let model=null,mixer=null,wire=false,token=0;
+const loader=new GLTFLoader();const clock=new THREE.Clock();
+function size(){const w=root.clientWidth,h=root.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}window.addEventListener('resize',size);size();
+function reset(){if(!model)return;const b=new THREE.Box3().setFromObject(model);const center=b.getCenter(new THREE.Vector3()),extent=Math.max(...b.getSize(new THREE.Vector3()).toArray())||2;orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(extent*1.1,extent*.5,extent*2.3));camera.near=Math.max(.001,extent*.001);camera.far=extent*50;camera.updateProjectionMatrix();orbit.update()}
+async function load(n){
+ const k=++token;status.textContent='Loading '+n+' 3D GLB…';mixer=null;
+ if(model){scene.remove(model);model=null}
+ const url='./assets/premium/'+n+'-animated.glb';
+ try{
+ const gltf=await loader.loadAsync(url);if(k!==token)return;model=gltf.scene;
+ model.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.wireframe=wire;o.material.side=THREE.DoubleSide}});
+ scene.add(model);reset();
+ if(gltf.animations.length){mixer=new THREE.AnimationMixer(model);mixer.clipAction(gltf.animations[0]).play()}
+ status.textContent=n[0].toUpperCase()+n.slice(1)+' — loaded genuine GLB ('+gltf.animations.length+' animation clip(s))';
+ }catch(e){status.textContent='Unable to load '+n+'. Check network or GitHub Pages deployment.';console.error(e)}
+}
+select.addEventListener('change',()=>load(select.value));
+document.getElementById('prev').onclick=()=>{select.selectedIndex=(select.selectedIndex+names.length-1)%names.length;load(select.value)};
+document.getElementById('next').onclick=()=>{select.selectedIndex=(select.selectedIndex+1)%names.length;load(select.value)};
+document.getElementById('wire').onclick=()=>{wire=!wire;document.getElementById('wire').textContent=wire?'Solid view':'Wireframe';model?.traverse(o=>{if(o.isMesh)o.material.wireframe=wire})};
+document.getElementById('reset').onclick=reset;
+function tick(){requestAnimationFrame(tick);const dt=clock.getDelta();mixer?.update(dt);orbit.update();renderer.render(scene,camera)}tick();
+load(names[0]);
+</script>
+</body></html>
