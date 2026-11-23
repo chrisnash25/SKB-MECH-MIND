@@ -33,7 +33,11 @@ canvas=Image.new('RGBA',(768,768),(0,0,0,0))
 scale=min(690/w,690/h)
 cut=rgba.resize((round(w*scale),round(h*scale)),Image.Resampling.LANCZOS)
 canvas.alpha_composite(cut,((768-cut.width)//2,(768-cut.height)//2))
-canvas.save(root/"bricko-reference.png")
+# TripoSR may interpret transparent-black areas as dark background geometry.
+# Composite against neutral white to avoid modelling the alpha canvas as a solid slab.
+white=Image.new('RGBA',canvas.size,(255,255,255,255))
+white.alpha_composite(canvas)
+white.convert('RGB').save(root/"bricko-reference.png")
 print("ISOLATED_REFERENCE",canvas.size, "foreground_pixels",int((alpha>128).sum()),flush=True)
 client=Client('AleenDG/3DGenTripoSR',verbose=False)
 api=client.view_api(return_format='dict')
