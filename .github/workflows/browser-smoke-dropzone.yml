@@ -33,7 +33,7 @@ jobs:
             const mp3=page.locator('#dz-original-track');
             const trackUrl=await mp3.getAttribute('src');
             if(!trackUrl || trackUrl !== 'Yate-Free-Roam.mp3') throw new Error('Soundtrack URL missing');
-            // Test audio independently of the Godot WebGL renderer (which can stall software Chromium).
+            // Deliberately abort Godot assets to test soundtrack only. Its failure overlay can intercept physical pointer clicks, so invoke DOM events directly for audio control assertions.
             await page.route('**/index.pck', route => route.abort());
             await page.route('**/index.wasm', route => route.abort());
             await page.locator('#dz-launch').click();
@@ -44,13 +44,13 @@ jobs:
             });
             console.log('AUDIO AFTER START',JSON.stringify(audio));
             if(audio.error || audio.paused || audio.time < 0.5 || audio.duration < 200 || audio.loop) throw new Error('Original soundtrack playback validation failed');
-            await page.locator('#dz-music-menu').click();
-            await page.locator('#dz-music-enabled-in-game').uncheck();
+            await page.locator('#dz-music-menu').evaluate(el => el.click());
+            await page.locator('#dz-music-enabled-in-game').evaluate(el => { el.checked=false; el.dispatchEvent(new Event('change',{bubbles:true})); });
             if(!(await page.evaluate(()=>document.getElementById('dz-original-track').paused))) throw new Error('Music Off does not pause');
-            await page.locator('#dz-music-enabled-in-game').check();
+            await page.locator('#dz-music-enabled-in-game').evaluate(el => { el.checked=true; el.dispatchEvent(new Event('change',{bubbles:true})); });
             await page.waitForTimeout(800);
             if((await page.evaluate(()=>document.getElementById('dz-original-track').paused))) throw new Error('Music On does not resume');
-            await page.locator('#dz-music-volume-in-game').fill('35');
+            await page.locator('#dz-music-volume-in-game').evaluate(el => { el.value='35'; el.dispatchEvent(new Event('input',{bubbles:true})); });
             if((await page.evaluate(()=>document.getElementById('dz-original-track').volume)) !== 0.35) throw new Error('Volume slider failed');
             if((await page.evaluate(()=>localStorage.getItem('dz-original-music-enabled'))) !== 'true') throw new Error('Music preference not persisted');
             if((await page.evaluate(()=>localStorage.getItem('dz-original-music-volume'))) !== '35') throw new Error('Volume preference not persisted');
