@@ -57,7 +57,24 @@ for obj in meshes:
         skipped += 1
         continue
 
-    color_attribute = obj.data.color_attributes[0].name
+    populated = []
+    for candidate in obj.data.color_attributes:
+        values = [tuple(item.color) for item in candidate.data]
+        if not values:
+            continue
+        rgb_max = max(max(value[0], value[1], value[2]) for value in values)
+        rgb_mean = sum(sum(value[:3]) / 3.0 for value in values) / len(values)
+        print(
+            "VERTEX_COLOR_ATTRIBUTE_STATS", obj.name,
+            candidate.name, candidate.domain, candidate.data_type,
+            "count", len(values), "rgb_max", rgb_max, "rgb_mean", rgb_mean,
+            flush=True,
+        )
+        if rgb_max > 0.02:
+            populated.append(candidate.name)
+    if not populated:
+        raise RuntimeError(f"{obj.name}: all imported vertex-colour attributes are blank")
+    color_attribute = populated[0]
     activate(obj)
     if not obj.data.uv_layers:
         bpy.ops.object.mode_set(mode="EDIT")
