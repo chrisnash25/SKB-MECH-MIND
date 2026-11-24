@@ -76,13 +76,26 @@ for obj in meshes:
         raise RuntimeError(f"{obj.name}: all imported vertex-colour attributes are blank")
     color_attribute = populated[0]
     activate(obj)
-    if not obj.data.uv_layers:
-        bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.mesh.select_all(action="SELECT")
-        bpy.ops.uv.smart_project(island_margin=0.02)
-        bpy.ops.object.mode_set(mode="OBJECT")
+    # TripoSR's exported UV layer can exist but be degenerate; always create
+    # a fresh atlas before baking so every face receives valid 0..1 UVs.
+    while len(obj.data.uv_layers):
+        obj.data.uv_layers.remove(obj.data.uv_layers[0])
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(island_margin=0.02)
+    bpy.ops.object.mode_set(mode="OBJECT")
     if not obj.data.uv_layers:
         raise RuntimeError(f"{obj.name}: UV unwrap failed")
+    obj.data.uv_layers.active = obj.data.uv_layers[0]
+    obj.data.uv_layers.active_index = 0
+    uv_values = [tuple(loop.uv) for loop in obj.data.uv_layers.active.data]
+    u_min = min(value[0] for value in uv_values)
+    u_max = max(value[0] for value in uv_values)
+    v_min = min(value[1] for value in uv_values)
+    v_max = max(value[1] for value in uv_values)
+    print("UV_ATLAS_BOUNDS", obj.name, u_min, u_max, v_min, v_max, flush=True)
+    if (u_max - u_min) < 0.5 or (v_max - v_min) < 0.5:
+        raise RuntimeError(f"{obj.name}: UV atlas has insufficient coverage")
 
     bake_material = bpy.data.materials.new(name=f"{obj.name}_VertexBake")
     bake_material.use_nodes = True
