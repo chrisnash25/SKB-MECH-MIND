@@ -6,6 +6,7 @@ from io import BytesIO
 from PIL import Image
 from gradio_client import Client,handle_file
 import os,requests,json,struct,shutil,time
+import numpy as np
 
 URLS={
   'bricko': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/2bb45103-402a-4239-bd11-c57267b6137a.png",
@@ -58,11 +59,17 @@ original.save(out/(name+"-source.png"))
 bbox=original.getchannel('A').getbbox()
 assert bbox
 im=original.crop(bbox)
-im.thumbnail((720,720),Image.Resampling.LANCZOS)
-canvas=Image.new('RGBA',(800,800),(255,255,255,255))
+im.thumbnail((680,680),Image.Resampling.LANCZOS)
+# Keep the transparent foreground intact until the final composite.
+# AleenDG/3DGenTripoSR's own RGBA preprocessing fills transparent pixels
+# with 50% neutral gray; the old white canvas was reconstructed as large
+# background sheets around the character.
+canvas=Image.new('RGBA',(800,800),(0,0,0,0))
 canvas.alpha_composite(im,((800-im.width)//2,(800-im.height)//2))
+rgba=np.asarray(canvas,dtype=np.float32)/255.0
+rgb=rgba[:,:,:3]*rgba[:,:,3:4]+(1.0-rgba[:,:,3:4])*0.5
 input_path=out/(name+"-model-input.png")
-canvas.convert('RGB').save(input_path)
+Image.fromarray(np.clip(rgb*255.0,0,255).astype(np.uint8),'RGB').save(input_path)
 print("MODEL_INPUT",name,original.size,bbox,flush=True)
 
 result=None
