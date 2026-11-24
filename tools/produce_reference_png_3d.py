@@ -6,7 +6,6 @@ from io import BytesIO
 from PIL import Image
 from gradio_client import Client,handle_file
 import os,requests,json,struct,shutil,time
-import numpy as np
 
 URLS={
   'bricko': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/2bb45103-402a-4239-bd11-c57267b6137a.png",
@@ -66,10 +65,10 @@ im.thumbnail((680,680),Image.Resampling.LANCZOS)
 # background sheets around the character.
 canvas=Image.new('RGBA',(800,800),(0,0,0,0))
 canvas.alpha_composite(im,((800-im.width)//2,(800-im.height)//2))
-rgba=np.asarray(canvas,dtype=np.float32)/255.0
-rgb=rgba[:,:,:3]*rgba[:,:,3:4]+(1.0-rgba[:,:,3:4])*0.5
+gray_background=Image.new('RGBA',(800,800),(128,128,128,255))
+gray_background.alpha_composite(canvas)
 input_path=out/(name+"-model-input.png")
-Image.fromarray(np.clip(rgb*255.0,0,255).astype(np.uint8),'RGB').save(input_path)
+gray_background.convert('RGB').save(input_path)
 print("MODEL_INPUT",name,original.size,bbox,flush=True)
 
 result=None
