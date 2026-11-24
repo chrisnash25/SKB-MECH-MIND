@@ -1,0 +1,60 @@
+name: PBR texture bake diagnostic
+run-name: Gizmo vertex-colour to PBR bake (staging only; not approval)
+on:
+  push:
+    branches: [reference-png-ten-real-mesh-and-animation]
+    paths:
+      - '.github/workflows/pbr-bake-smoke.yml'
+      - 'tools/bake_vertex_colors_pbr.py'
+      - 'tools/render_reference_png_3d_front_smoke.py'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  gizmo-pbr-bake:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the already-generated alpha-safe Gizmo artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: alpha-smoke-gizmo-diagnostic
+          path: input-artifact
+          run-id: 45475530822
+          github-token: ${{ github.token }}
+      - name: Install Blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
+      - name: Bake vertex colours into PBR maps
+        run: |
+          blender -b -noaudio --python-exit-code 1 --python tools/bake_vertex_colors_pbr.py -- \
+            "input-artifact/emotional-support-brick-3d/staging/reference-png-cast/gizmo/gizmo-animated.glb" \
+            "emotional-support-brick-3d/staging/reference-png-cast/gizmo/gizmo-pbr.glb"
+      - name: Verify embedded PBR textures and preserved animation
+        run: |
+          python - <<'PY'
+          import json,struct,pathlib
+          p=pathlib.Path('emotional-support-brick-3d/staging/reference-png-cast/gizmo/gizmo-pbr.glb')
+          b=p.read_bytes()
+          assert b[:4]==b'glTF' and len(b)>100000
+          n=struct.unpack_from('<I',b,12)[0]
+          d=json.loads(b[20:20+n])
+          assert d.get('skins') and len(d.get('animations',[]))>=4, 'Skin or animation clips lost'
+          assert d.get('materials') and d.get('textures') and d.get('images'), 'No embedded PBR textures'
+          assert any(m.get('pbrMetallicRoughness',{}).get('baseColorTexture') for m in d['materials']), 'No base-colour texture'
+          assert any(m.get('normalTexture') for m in d['materials']), 'No normal texture'
+          assert all(any('material' in primitive for primitive in mesh.get('primitives',[])) for mesh in d['meshes']), 'Unassigned mesh material'
+          print('PBR_BAKED_GLB_VALID',len(b),'materials',len(d['materials']),'textures',len(d['textures']),'images',len(d['images']),'animations',len(d['animations']))
+          PY
+      - name: Render front-facing textured model
+        run: blender -b -noaudio --python-exit-code 1 --python tools/render_reference_png_3d_front_smoke.py
+      - name: Preserve PBR model and render
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbr-bake-gizmo-diagnostic
+          path: |
+            input-artifact/emotional-support-brick-3d/staging/reference-png-cast/gizmo/
+            emotional-support-brick-3d/staging/reference-png-cast/gizmo/gizmo-pbr.glb
+            emotional-support-brick-3d/staging/reference-png-cast/gizmo/gizmo-pbr-front-render.png
+          if-no-files-found: warn
