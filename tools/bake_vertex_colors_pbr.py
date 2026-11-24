@@ -73,11 +73,13 @@ for obj in meshes:
     links = bake_material.node_tree.links
     nodes.clear()
     output = nodes.new("ShaderNodeOutputMaterial")
-    emission = nodes.new("ShaderNodeEmission")
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.inputs["Metallic"].default_value = 0.0
+    bsdf.inputs["Roughness"].default_value = 1.0
     vertex = nodes.new("ShaderNodeVertexColor")
     vertex.layer_name = color_attribute
-    links.new(vertex.outputs["Color"], emission.inputs["Color"])
-    links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    links.new(vertex.outputs["Color"], bsdf.inputs["Base Color"])
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
     base_image = make_image(f"{obj.name}_BaseColor", 1024)
     target = nodes.new("ShaderNodeTexImage")
     target.image = base_image
@@ -89,14 +91,39 @@ for obj in meshes:
     obj.data.materials.append(bake_material)
     for polygon in obj.data.polygons:
         polygon.material_index = 0
+    if not obj.data.uv_layers:
+        raise RuntimeError(f"{obj.name}: no UV layer available for texture baking")
+    obj.data.uv_layers.active = obj.data.uv_layers[0]
+    obj.data.uv_layers.active_index = 0
+    scene.render.bake.target = "IMAGE_TEXTURES"
     activate(obj)
-    bpy.ops.object.bake(type="EMIT")
+    result = bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=12, use_clear=True)
+    print("BASE_COLOR_BAKE_RESULT", obj.name, result, "attribute", color_attribute, flush=True)
+    if "FINISHED" not in result:
+        raise RuntimeError(f"{obj.name}: base-colour bake was cancelled")
+    base_image.update()
+    base_pixels = list(base_image.pixels)
+    base_max = max(base_pixels[0::4] + base_pixels[1::4] + base_pixels[2::4])
+    if base_max < 0.02:
+        raise RuntimeError(f"{obj.name}: baked base-colour texture is blank")
     base_image.pack()
 
     normal_image = make_image(f"{obj.name}_Normal", 1024)
     target.image = normal_image
+    for node in nodes:
+        node.select = False
+    target.select = True
     nodes.active = target
-    bpy.ops.object.bake(type="NORMAL")
+    activate(obj)
+    result = bpy.ops.object.bake(type="NORMAL", margin=12, use_clear=True)
+    print("NORMAL_BAKE_RESULT", obj.name, result, flush=True)
+    if "FINISHED" not in result:
+        raise RuntimeError(f"{obj.name}: normal-map bake was cancelled")
+    normal_image.update()
+    normal_pixels = list(normal_image.pixels)
+    normal_max = max(normal_pixels[0::4] + normal_pixels[1::4] + normal_pixels[2::4])
+    if normal_max < 0.02:
+        raise RuntimeError(f"{obj.name}: baked normal texture is blank")
     normal_image.colorspace_settings.name = "Non-Color"
     normal_image.pack()
 
