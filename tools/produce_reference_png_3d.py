@@ -5,7 +5,8 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 from gradio_client import Client,handle_file
-import os,sys,requests,json,struct,shutil,time
+import os,requests,json,struct,shutil,time
+
 URLS={
   'bricko': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/2bb45103-402a-4239-bd11-c57267b6137a.png",
   'rusty': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/9d44fafa-d5eb-44f9-8a4d-3f92d3af16f3.png",
@@ -15,11 +16,38 @@ URLS={
   'blocky': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/fe301605-eb64-4a69-99cd-f429e632eec2.png",
   'cozy': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/113224cc-aebf-4f1d-987d-82b4b0f87007.png",
   'zapp': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/4164c385-6813-434b-9971-9b428f94a765.png",
-  'echo': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/142ca4b1-da6d-4239-ba91-2c31b69cbb6d.png",
+  'echo': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/142ca4b1-da6a-4239-ba91-2c31b69cbb6d.png",
   'gizmo': "https://d2ol7oe51mr4n9.cloudfront.net/user_3JtDd6TkegxRQaZ9ylE6tZv9gPq/07c25c9e-bf7d-4d2b-b9b4-6c13ca3591d4.png"
 }
+
+def is_transient_remote_error(exc):
+    """Inspect exception type names and chained causes; httpx.ReadTimeout has an empty message."""
+    pending=[exc]
+    seen=set()
+    tokens=(
+        "timeout","temporar","incompletechunkedread","peerclosedconnection",
+        "remoteprotocolerror","connectionreset","connecterror","networkerror",
+        "readerror","writeerror","serverdisconnected","protocolerror"
+    )
+    while pending:
+        current=pending.pop()
+        if current is None or id(current) in seen:
+            continue
+        seen.add(id(current))
+        typename=type(current).__name__.lower()
+        message=str(current).lower()
+        if any(token in typename or token in message for token in tokens):
+            return True
+        pending.extend([
+            getattr(current,"__cause__",None),
+            getattr(current,"__context__",None)
+        ])
+        pending.extend(getattr(current,"exceptions",[]) or [])
+    return False
+
 name=os.environ.get("CHARACTER","bricko").lower()
-if name not in URLS: raise SystemExit("Unknown character: "+name)
+if name not in URLS:
+    raise SystemExit("Unknown character: "+name)
 out=Path("emotional-support-brick-3d/staging/reference-png-cast")/name
 out.mkdir(parents=True,exist_ok=True)
 r=requests.get(URLS[name],timeout=65)
@@ -27,7 +55,6 @@ r.raise_for_status()
 original=Image.open(BytesIO(r.content)).convert('RGBA')
 assert original.width>=600 and original.height>=600, original.size
 original.save(out/(name+"-source.png"))
-# Preserve silhouettes and details; give zeroGPU app a tightly padded white RGB image.
 bbox=original.getchannel('A').getbbox()
 assert bbox
 im=original.crop(bbox)
@@ -37,24 +64,32 @@ canvas.alpha_composite(im,((800-im.width)//2,(800-im.height)//2))
 input_path=out/(name+"-model-input.png")
 canvas.convert('RGB').save(input_path)
 print("MODEL_INPUT",name,original.size,bbox,flush=True)
-for attempt in range(1,4):
- try:
-  client=Client("AleenDG/3DGenTripoSR",verbose=False)
-  print("REQUESTING_REAL_MESH",name,"attempt",attempt,flush=True)
-  result=client.predict(handle_file(str(input_path)),api_name="/generate")
-  break
- except (requests.RequestException, TimeoutError, ConnectionError) as e:
-  if attempt==3:raise
-  print("TRANSIENT_ERROR",name,str(e)[:250],"retry",attempt,flush=True)
-  time.sleep(10*attempt)
- except Exception as e:
-  if not any(t in str(e).lower() for t in ("timeout","temporar","incomplete chunked read","peer closed connection","remoteprotocolerror","connection reset")):raise
-  if attempt==3:raise
-  print("TRANSIENT_SERVICE_TIMEOUT",name,str(e)[:250],flush=True)
-  time.sleep(10*attempt)
+
+result=None
+for attempt in range(1,5):
+    try:
+        client=Client("AleenDG/3DGenTripoSR",verbose=False)
+        print("REQUESTING_REAL_MESH",name,"attempt",attempt,flush=True)
+        result=client.predict(handle_file(str(input_path)),api_name="/generate")
+        break
+    except Exception as exc:
+        if not is_transient_remote_error(exc) or attempt==4:
+            raise
+        print(
+            "TRANSIENT_REMOTE_ERROR",name,
+            "type",type(exc).__name__,
+            "message",str(exc)[:250],
+            "retry",attempt,
+            flush=True
+        )
+        time.sleep(10*(2**(attempt-1)))
+
+if result is None:
+    raise RuntimeError("3D generator returned no result after retries")
 paths=[v for v in result if isinstance(v,str) and v.lower().endswith(('.glb','.obj'))]
 glbs=[p for p in paths if p.lower().endswith('.glb')]
-if not glbs:raise RuntimeError("3D generator did not return GLB "+repr(result)[:500])
+if not glbs:
+    raise RuntimeError("3D generator did not return GLB "+repr(result)[:500])
 p=Path(glbs[0])
 assert p.is_file(),str(p)
 dst=out/(name+"-raw.glb")
@@ -65,4 +100,12 @@ assert struct.unpack_from('<I',b,8)[0]==len(b)
 j=struct.unpack_from('<I',b,12)[0]
 doc=json.loads(b[20:20+j])
 assert doc.get("meshes"), "No 3D mesh data"
-print("3D_MODEL_GENERATED",name,"bytes",len(b),"meshes",len(doc["meshes"]),"textures",len(doc.get("textures",[])),flush=True)
+print(
+    "3D_MODEL_GENERATED",name,
+    "bytes",len(b),
+    "meshes",len(doc["meshes"]),
+    "materials",len(doc.get("materials",[])),
+    "textures",len(doc.get("textures",[])),
+    "images",len(doc.get("images",[])),
+    flush=True
+)

@@ -14,7 +14,7 @@ jobs:
   models:
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         character: [bricko, rusty, pulse, calm, spark, blocky, cozy, zapp, echo, gizmo]
     runs-on: ubuntu-24.04
@@ -40,7 +40,7 @@ jobs:
           blender -b -noaudio --python-exit-code 1 --python tools/rig_trellis_cast.py -- \
             "emotional-support-brick-3d/staging/reference-png-cast/$CHARACTER/$CHARACTER-raw.glb" \
             "emotional-support-brick-3d/staging/reference-png-cast/$CHARACTER/$CHARACTER-animated.glb"
-      - name: Verify actual rig and animations
+      - name: Verify PBR texture, rig and animation structure
         run: |
           python - <<'PY'
           import json,struct,os,pathlib
@@ -50,8 +50,13 @@ jobs:
           assert b[:4]==b'glTF' and len(b)>100000
           n=struct.unpack_from('<I',b,12)[0]
           d=json.loads(b[20:20+n])
-          assert d.get('skins') and len(d.get('animations',[]))>=4
-          print('ANIMATED_GLB_VALID',name,len(b),len(d['animations']))
+          assert d.get('skins') and len(d.get('animations',[]))>=4, 'Missing skin or four animation clips'
+          assert d.get('materials') and d.get('textures') and d.get('images'), 'Rejected: no embedded PBR material textures'
+          textured=[m for m in d['materials'] if m.get('pbrMetallicRoughness',{}).get('baseColorTexture')]
+          assert textured, 'Rejected: no PBR base-colour texture is assigned'
+          assert all(any('material' in primitive for primitive in mesh.get('primitives',[])) for mesh in d['meshes']), 'Rejected: mesh primitives have no material assignment'
+          assert all(a.get('channels') and a.get('samplers') for a in d['animations']), 'Rejected: animation clip has no channels or samplers'
+          print('PBR_TEXTURED_ANIMATED_GLB_VALID',name,len(b),len(d['animations']),len(d['textures']),len(d['images']))
           PY
       - name: Render actual 3D model at 1080p
         run: blender -b -noaudio --python-exit-code 1 --python tools/render_reference_png_3d.py
