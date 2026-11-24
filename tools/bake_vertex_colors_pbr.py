@@ -19,6 +19,7 @@ if not meshes:
 scene = bpy.context.scene
 scene.render.engine = "CYCLES"
 scene.cycles.samples = 1
+scene.cycles.device = "CPU"
 scene.render.bake.margin = 12
 scene.render.bake.use_clear = True
 scene.render.bake.use_pass_color = True
@@ -106,8 +107,8 @@ for obj in meshes:
     bsdf = nodes.new("ShaderNodeBsdfPrincipled")
     bsdf.inputs["Metallic"].default_value = 0.0
     bsdf.inputs["Roughness"].default_value = 1.0
-    vertex = nodes.new("ShaderNodeVertexColor")
-    vertex.layer_name = color_attribute
+    vertex = nodes.new("ShaderNodeAttribute")
+    vertex.attribute_name = color_attribute
     links.new(vertex.outputs["Color"], bsdf.inputs["Base Color"])
     links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
     base_image = make_image(f"{obj.name}_BaseColor", 1024)
@@ -126,7 +127,13 @@ for obj in meshes:
     obj.data.uv_layers.active = obj.data.uv_layers[0]
     obj.data.uv_layers.active_index = 0
     scene.render.bake.target = "IMAGE_TEXTURES"
+    obj.active_material_index = 0
     activate(obj)
+    for node in nodes:
+        node.select = False
+    target.select = True
+    nodes.active = target
+    print("ACTIVE_BAKE_TARGET", obj.name, obj.active_material.name, nodes.active.name, target.image.name, flush=True)
     result = bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=12, use_clear=True)
     print("BASE_COLOR_BAKE_RESULT", obj.name, result, "attribute", color_attribute, flush=True)
     if "FINISHED" not in result:
