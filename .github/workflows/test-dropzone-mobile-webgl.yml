@@ -1,5 +1,5 @@
 name: Diagnose DROPZONE mobile WebGL runtime
-# Validation: latest West Walk Tesco graphics and standard Xbox controls 2026-11-20
+# Validation: published DROPZONE in portrait and Galaxy-class landscape viewports.
 on:
   push:
     branches: [main]
@@ -10,7 +10,7 @@ permissions:
 jobs:
   mobile-browser:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Install Chromium
         run: |
@@ -18,43 +18,67 @@ jobs:
           npm init -y >/dev/null
           npm install playwright@1.58.2 --no-audit --no-fund
           npx playwright install --with-deps chromium
-      - name: Launch real published DROPZONE in mobile viewport
+
+      - name: Test published DROPZONE in portrait and landscape
         run: |
           cat > /tmp/webgl-mobile/test.cjs <<'EOF'
           const {chromium}=require('playwright');
-          (async()=>{
-            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
-            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+          const url='https://chrisnash25.github.io/SKB-MECH-MIND/dropzone/?test=mobile-webgl';
+          const bad=/out of memory|webgl context lost|error loading|failed to load|abort\(/i;
+          async function testViewport(browser,name,width,height){
+            const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2,isMobile:true,hasTouch:true});
             const errors=[];
             page.on('pageerror',e=>errors.push('PAGE '+e.message));
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text().slice(0,600))});
             await page.addInitScript(()=>{window.__contextLostObserved=false;document.addEventListener('webglcontextlost',()=>{window.__contextLostObserved=true},true)});
-            const res=await page.goto('https://chrisnash25.github.io/SKB-MECH-MIND/dropzone/?test=mobile-webgl',{waitUntil:'domcontentloaded',timeout:60000});
-            console.log('HTTP',res.status());
+            const res=await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
+            console.log(name+'_HTTP',res.status());
             await page.locator('#dz-launch').click({timeout:15000});
-            console.log('MOBILE_START_CLICKED');
-            for(let i=0;i<16;i++){await page.waitForTimeout(5000);if(await page.evaluate(()=>!document.querySelector('#status')))break;}
-            const s=await page.evaluate(()=>{
+            console.log(name+'_START_CLICKED');
+            for(let i=0;i<16;i++){
+              await page.waitForTimeout(5000);
+              if(await page.evaluate(()=>!document.querySelector('#status'))) break;
+            }
+            const state=await page.evaluate(()=>{
               const canvas=document.querySelector('#canvas');
               let gl=null;
               try{gl=canvas?.getContext('webgl2')}catch(e){}
-              return {devicePixelRatio:window.devicePixelRatio,canvasW:canvas?.width,canvasH:canvas?.height,
-                      webgl2Available:!!gl,contextLost:gl?.isContextLost(),everLost:window.__contextLostObserved,
-                      gameStarted:!document.querySelector('#status'),notice:document.querySelector('#status-notice')?.innerText||''};
+              const rect=canvas?.getBoundingClientRect();
+              return {
+                viewport:{width:innerWidth,height:innerHeight},
+                devicePixelRatio:devicePixelRatio,
+                canvas:{width:canvas?.width,height:canvas?.height,clientWidth:rect?.width,clientHeight:rect?.height},
+                webgl2Available:!!gl,
+                contextLost:gl?.isContextLost(),
+                everLost:window.__contextLostObserved,
+                gameStarted:!document.querySelector('#status'),
+                notice:document.querySelector('#status-notice')?.innerText||''
+              };
             });
-            console.log('WEBGL_RUNTIME',JSON.stringify(s));
-            console.log('JAVASCRIPT_ERRORS',JSON.stringify(errors.slice(0,12)));
-            await page.screenshot({path:'/tmp/dropzone-mobile-live.png',timeout:15000});
-            if(res.status()!==200 || !s.webgl2Available || s.contextLost || s.everLost || !s.gameStarted || errors.some(e=>/out of memory|webgl context lost|error loading|failed to load|abort\(/i.test(e))) process.exitCode=1;
+            console.log(name+'_WEBGL_RUNTIME',JSON.stringify(state));
+            console.log(name+'_JAVASCRIPT_ERRORS',JSON.stringify(errors.slice(0,12)));
+            await page.screenshot({path:'/tmp/dropzone-mobile-'+name+'.png',timeout:15000});
+            const canvasLandscape=state.canvas.clientWidth>state.canvas.clientHeight;
+            const fail=res.status()!==200 || !state.webgl2Available || state.contextLost || state.everLost ||
+              !state.gameStarted || errors.some(e=>bad.test(e)) || (name==='landscape' && !canvasLandscape);
+            await page.close();
+            return fail;
+          }
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
+            let failed=false;
+            failed=await testViewport(browser,'portrait',390,844)||failed;
+            failed=await testViewport(browser,'landscape',844,390)||failed;
             await browser.close();
+            if(failed) process.exitCode=1;
           })().catch(e=>{console.error('BROWSER TEST ERROR',e);process.exitCode=1});
           EOF
           cd /tmp/webgl-mobile
-          timeout 145s node test.cjs
+          timeout 190s node test.cjs
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dropzone-mobile-real-start-screenshot
-          path: /tmp/dropzone-mobile-live.png
+          name: dropzone-mobile-portrait-landscape-screenshots
+          path: /tmp/dropzone-mobile-*.png
           if-no-files-found: ignore
